@@ -9,7 +9,7 @@ A Habit and Task tracking application built as the CS 450 course project for Wal
 Prerequisites
 
 - Git
--
+- If doing work for Android, see [Android development setup](docs/android-development-setup.md)
 
 ```pwsh
 git clone https://github.com/wwu-cs450/Habit-Task-Tracker.git
