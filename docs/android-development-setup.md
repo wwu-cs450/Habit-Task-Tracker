@@ -30,7 +30,7 @@ You can set up the project to use the emulator that comes with Android studio--i
 2. If on Windows, [install USB drivers](https://developer.android.com/studio/run/oem-usb)
 3. Connect your device to your computer with a USB cable
 4. In the popup on your Android device, allow USB debugging
-4. Run `flutter devices` to verify that Flutter is connected to your device
+5. Run `flutter devices` to verify that Flutter is connected to your device
 
 ## Build and run project
 
