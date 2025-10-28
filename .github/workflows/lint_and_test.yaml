@@ -23,7 +23,7 @@ jobs:
       
       # Fetches proj dependencies from pub
       - name: Install dependencies
-        run: flutter pub get && cd habit_task_tracker
+        run: cd habit_task_tracker && flutter pub get
 
       # Lint Dart code
       - name: Verify formatting
