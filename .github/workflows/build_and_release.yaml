@@ -28,7 +28,7 @@ jobs:
             with:
                 name: release-apk
                 # Try running the build locally with the build command to be sure of this path
-                path: build/app/outputs/flutter-apk/app-dev-release.apk
+                path: habit_task_tracker/build/app/outputs/flutter-apk/app-dev-release.apk
 
     build_ios:
         name: build_ios
@@ -44,10 +44,11 @@ jobs:
                 certificate-password: ${{ secrets.IOS_BUILD_CERTIFICATE_PASSWORD }}
                 provisioning-profile-base64: ${{ secrets.IOS_MOBILE_PROVISIONING_PROFILE_BASE64 }}
                 keychain-password: ${{ secrets.IOS_GITHUB_KEYCHAIN_PASSWORD }}
+                working-directory: ./habit_task_tracker/
 
           - name: Archive IPA
             uses: actions/upload-artifact@v4
             with:
                 name: release-ipa
                 # Try running the build locally with the build command to be sure of this path
-                path: build/ios/ipa/App-dev.ipa
+                path: habit_task_tracker/build/ios/ipa/App-dev.ipa
