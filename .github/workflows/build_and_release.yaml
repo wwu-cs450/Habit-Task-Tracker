@@ -13,7 +13,7 @@ jobs:
         name: build_android
         runs-on: ubuntu-latest
         steps:
-          - uses: actions/checkout@v2
+          - uses: actions/checkout@v4
 
           - uses: cedvdb/action-flutter-build-android@v1
             with:
@@ -24,7 +24,7 @@ jobs:
                 working-directory: ./habit_task_tracker/
 
           - name: Archive APK
-            uses: actions/upload-artifact@v2
+            uses: actions/upload-artifact@v4
             with:
                 name: release-apk
                 # Try running the build locally with the build command to be sure of this path
@@ -34,7 +34,7 @@ jobs:
         name: build_ios
         runs-on: macos-latest
         steps:
-          - uses: actions/checkout@v2
+          - uses: actions/checkout@v4
 
           - uses: cedvdb/action-flutter-build-ios@v1
             with:
@@ -46,7 +46,7 @@ jobs:
                 keychain-password: ${{ secrets.IOS_GITHUB_KEYCHAIN_PASSWORD }}
 
           - name: Archive IPA
-            uses: actions/upload-artifact@v2
+            uses: actions/upload-artifact@v4
             with:
                 name: release-ipa
                 # Try running the build locally with the build command to be sure of this path
