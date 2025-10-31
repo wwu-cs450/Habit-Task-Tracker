@@ -24,7 +24,7 @@ jobs:
       
       # Installs dependencies
       - name: Install dependencies
-        run: apt-get update && apt-get install lcov
+        run: sudo apt-get update && sudo apt-get install -y lcov
       
       # Fetches proj dependencies from pub
       - name: Install dependencies
