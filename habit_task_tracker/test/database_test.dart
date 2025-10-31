@@ -1,7 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:habit_task_tracker/backend.dart';
 
-
 // sample test to verify saving and loading data from the localstore database
 // delete this test when backend is functional
 void main() {
