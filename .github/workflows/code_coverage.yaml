@@ -43,7 +43,7 @@ jobs:
 
       # Upload code coverage report as artifact
       - name: Upload code coverage report
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: code-coverage-report
           path: habit_task_tracker/coverage/html
