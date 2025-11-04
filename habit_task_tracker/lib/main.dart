@@ -37,11 +37,11 @@ class MyHomePage extends StatefulWidget {
 
 class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
   // Temporarily start with two habits
-  List<bool> _checked = List<bool>.filled(2, false, growable: true);
-  List<bool> _expanded = List<bool>.filled(2, false, growable: true);
+  final List<bool> _checked = List<bool>.filled(2, false, growable: true);
+  final List<bool> _expanded = List<bool>.filled(2, false, growable: true);
   // THIS SHOULD SWITCH TO WORKING WITH A CLASS AND DB BUT TWO LISTS IS TEMPORARY SOLUTION
-  List<String> _titles = List<String>.filled(2, 'Title', growable: true);
-  List<String> _descriptions = List<String>.filled(
+  final List<String> _titles = List<String>.filled(2, 'Title', growable: true);
+  final List<String> _descriptions = List<String>.filled(
     2,
     'Description',
     growable: true,
