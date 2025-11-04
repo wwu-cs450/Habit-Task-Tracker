@@ -81,6 +81,13 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
       setState(() {
         _checked.removeAt(index);
         _expanded.removeAt(index);
+        // Keep title/description lists in sync
+        if (index >= 0 && index < _titles.length) {
+          _titles.removeAt(index);
+        }
+        if (index >= 0 && index < _descriptions.length) {
+          _descriptions.removeAt(index);
+        }
       });
     }
   }
