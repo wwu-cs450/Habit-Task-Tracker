@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-// I Got some help from Github Copilot with this code. I also got some ideas from
+// I got some help from GitHub CoPilot with this code. I also got some ideas from
 // this youtube video: https://www.youtube.com/watch?v=K4P5DZ9TRns
 
 void main() {
@@ -231,8 +231,8 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
             // Make this take information from user and store in the database
             createHabit('New Habit', 'Description');
           },
-          child: const Icon(Icons.add, size: 45),
           shape: const CircleBorder(),
+          child: const Icon(Icons.add, size: 45),
         ),
       ),
     );
