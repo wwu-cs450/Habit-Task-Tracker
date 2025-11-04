@@ -11,7 +11,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:habit_task_tracker/main.dart';
 
 void main() {
-  testWidgets('Adding a habit with the FAB increases the card count', (WidgetTester tester) async {
+  testWidgets('Adding a habit with the FAB increases the card count', (
+    WidgetTester tester,
+  ) async {
     // Build our app and trigger a frame.
     await tester.pumpWidget(const MyApp());
 
