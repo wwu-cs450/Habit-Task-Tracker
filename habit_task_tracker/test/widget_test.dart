@@ -11,20 +11,18 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:habit_task_tracker/main.dart';
 
 void main() {
-  testWidgets('Counter increments smoke test', (WidgetTester tester) async {
+  testWidgets('Adding a habit with the FAB increases the card count', (WidgetTester tester) async {
     // Build our app and trigger a frame.
     await tester.pumpWidget(const MyApp());
 
-    // Verify that our counter starts at 0.
-    expect(find.text('0'), findsOneWidget);
-    expect(find.text('1'), findsNothing);
+    // The app starts with two habit cards (per the initial lists)
+    expect(find.byType(Card), findsNWidgets(2));
 
-    // Tap the '+' icon and trigger a frame.
+    // Tap the '+' icon and trigger a frame to add a new habit.
     await tester.tap(find.byIcon(Icons.add));
     await tester.pump();
 
-    // Verify that our counter has incremented.
-    expect(find.text('0'), findsNothing);
-    expect(find.text('1'), findsOneWidget);
+    // Verify that a new card was added.
+    expect(find.byType(Card), findsNWidgets(3));
   });
 }
