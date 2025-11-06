@@ -14,3 +14,7 @@ Future<Map<String, dynamic>?> loadTask(String id) async {
 }
 
 //-----------------------------------------------------------------
+
+Future<void> saveData(String collection, String id, dynamic data) async {
+  await db.collection(collection).doc(id).set(data);
+}
