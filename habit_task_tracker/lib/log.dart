@@ -45,8 +45,8 @@ int saveLog(Log log) {
   return 0;
 }
 
-Future<Log> loadLog(int id) async {
-  var data = await loadData('Logs', id.toString());
+Future<Log> loadLog(String id) async {
+  var data = await loadData('Logs', id);
   if (data == null) {
     throw Exception('Log with id $id not found');
   }
