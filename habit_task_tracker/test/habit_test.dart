@@ -54,5 +54,37 @@ void main() {
       );
       expect(habit.gFrequency, Frequency.none);
     });
+    
+    test('Habit toJson and fromJson Test', () {
+      final habit = Habit(
+        id: 'habit_4',
+        name: 'Meditate',
+        description: 'Daily meditation for 10 minutes',
+        startDate: DateTime(2024, 4, 4),
+        endDate: DateTime(2024, 9, 30),
+        isRecurring: true,
+        frequency: Frequency.daily,
+      );
+
+      final json = habit.toJson();
+      expect(json['id'], 'habit_4');
+      expect(json['name'], 'Meditate');
+      expect(json['description'], 'Daily meditation for 10 minutes');
+      expect(json['startDate'], '2024-04-04T00:00:00.000');
+      expect(json['endDate'], '2024-09-30T00:00:00.000');
+      expect(json['isRecurring'], true);
+      expect(json['frequency'], 'Frequency.daily');
+
+      final habitFromJson = Habit.fromJson(json);
+      expect(habitFromJson.gId, 'habit_4');
+      expect(habitFromJson.gName, 'Meditate');
+      expect(habitFromJson.description, 'Daily meditation for 10 minutes');
+      expect(habitFromJson.gStartDate, DateTime(2024, 4, 4));
+      expect(habitFromJson.gEndDate, DateTime(2024, 9, 30));
+      expect(habitFromJson.gIsRecurring, true);
+      expect(habitFromJson.gFrequency, Frequency.daily);
+    });
+
+    
   });
 }
