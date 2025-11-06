@@ -40,29 +40,38 @@ class Habit {
   bool get gIsRecurring => isRecurring;
 
   Frequency get gFrequency => frequency ?? Frequency.none;
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': _id,
+      'name': name,
+      'description': description,
+      'startDate': startDate.toIso8601String(),
+      'endDate': endDate.toIso8601String(),
+      'isRecurring': isRecurring,
+      'frequency': gFrequency.toString(),
+    };
+  }
+
+  factory Habit.fromJson(Map<String, dynamic> json) {
+    return Habit(
+      id: json['id'],
+      name: json['name'],
+      description: json['description'],
+      startDate: DateTime.parse(json['startDate']),
+      endDate: DateTime.parse(json['endDate']),
+      isRecurring: json['isRecurring'],
+      frequency: frequencyMap[json['frequency']] ?? Frequency.none,
+    );
+  }
 }
 
 int saveHabit(Habit habit) {
-  saveData('Habits', habit._id, {
-    'name': habit.name,
-    'description': habit.description,
-    'startDate': habit.startDate.toIso8601String(),
-    'endDate': habit.endDate.toIso8601String(),
-    'isRecurring': habit.isRecurring,
-    'frequency': habit.gFrequency.toString(),
-  });
+  saveData('Habits', habit._id, habit.toJson());
   return 0;
 }
 
-Future<dynamic> loadHabit(String id) async {
+Future<Habit> loadHabit(String id) async {
   var data = await loadData('Habits', id);
-  return Habit(
-    id: id,
-    name: data['name'],
-    description: data['description'],
-    startDate: DateTime.parse(data['startDate']),
-    endDate: DateTime.parse(data['endDate']),
-    isRecurring: data['isRecurring'],
-    frequency: frequencyMap[data['frequency']] ?? Frequency.none,
-  );
+  return Habit.fromJson(data);
 }
