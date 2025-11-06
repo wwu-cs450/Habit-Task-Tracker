@@ -18,3 +18,7 @@ Future<Map<String, dynamic>?> loadTask(String id) async {
 Future<void> saveData(String collection, String id, dynamic data) async {
   await db.collection(collection).doc(id).set(data);
 }
+
+Future<dynamic> loadData(String collection, String id) async {
+  return await db.collection(collection).doc(id).get();
+}

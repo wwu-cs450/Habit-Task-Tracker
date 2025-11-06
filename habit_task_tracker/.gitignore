@@ -46,3 +46,4 @@ app.*.map.json
 
 # Localstore database files
 /sample/
+/Habits/
