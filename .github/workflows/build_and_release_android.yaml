@@ -13,19 +13,19 @@ jobs:
         name: build_android
         runs-on: ubuntu-latest
         steps:
-          - uses: actions/checkout@v4
+            - uses: actions/checkout@v4
 
-          - uses: cedvdb/action-flutter-build-android@v1
-            with:
-                keystore-base64: ${{ secrets.ANDROID_RELEASE_KEY }}
-                keystore-password: "${{ secrets.ANDROID_RELEASE_KEY_PASSWORD }}"
-                # optionals
-                build-cmd: flutter build apk --release --flavor dev
-                working-directory: ./habit_task_tracker/
+            - uses: cedvdb/action-flutter-build-android@v1
+              with:
+                  keystore-base64: ${{ secrets.ANDROID_RELEASE_KEY }}
+                  keystore-password: "${{ secrets.ANDROID_RELEASE_KEY_PASSWORD }}"
+                  # optionals
+                  build-cmd: flutter build apk --release
+                  working-directory: ./habit_task_tracker/
 
-          - name: Archive APK
-            uses: actions/upload-artifact@v4
-            with:
-                name: release-apk
-                # Try running the build locally with the build command to be sure of this path
-                path: habit_task_tracker/build/app/outputs/flutter-apk/app-dev-release.apk
+            - name: Archive APK
+              uses: actions/upload-artifact@v4
+              with:
+                  name: release-apk
+                  # Try running the build locally with the build command to be sure of this path
+                  path: habit_task_tracker/build/app/outputs/flutter-apk/app-release.apk
