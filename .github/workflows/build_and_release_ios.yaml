@@ -1,33 +1,33 @@
 name: iOS - Build and Release
 
 on:
-    workflow_dispatch:
-        inputs:
-            branch_name:
-                description: "Branch to run the workflow on"
-                required: true
-                default: "main"
+  workflow_dispatch:
+    inputs:
+      branch_name:
+        description: "Branch to run the workflow on"
+        required: true
+        default: "main"
 
 jobs:
-    build_ios:
-        name: build_ios
-        runs-on: macos-latest
-        steps:
-          - uses: actions/checkout@v4
+  build_ios:
+    name: build_ios
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
 
-          - uses: cedvdb/action-flutter-build-ios@v1
-            with:
-                # always use --export-options-plist=ios/GithubActionsExportOptions.plist
-                build-cmd: flutter build ipa --release --flavor dev --export-options-plist=ios/GithubActionsExportOptions.plist
-                certificate-base64: ${{ secrets.IOS_BUILD_CERTIFICATE_BASE64 }}
-                certificate-password: ${{ secrets.IOS_BUILD_CERTIFICATE_PASSWORD }}
-                provisioning-profile-base64: ${{ secrets.IOS_MOBILE_PROVISIONING_PROFILE_BASE64 }}
-                keychain-password: ${{ secrets.IOS_GITHUB_KEYCHAIN_PASSWORD }}
-                working-directory: ./habit_task_tracker/
+      - uses: cedvdb/action-flutter-build-ios@v1
+        with:
+          # always use --export-options-plist=ios/GithubActionsExportOptions.plist
+          build-cmd: flutter build ipa --release --flavor dev --export-options-plist=ios/GithubActionsExportOptions.plist
+          certificate-base64: ${{ secrets.IOS_BUILD_CERTIFICATE_BASE64 }}
+          certificate-password: ${{ secrets.IOS_BUILD_CERTIFICATE_PASSWORD }}
+          provisioning-profile-base64: ${{ secrets.IOS_MOBILE_PROVISIONING_PROFILE_BASE64 }}
+          keychain-password: ${{ secrets.IOS_GITHUB_KEYCHAIN_PASSWORD }}
+          working-directory: ./habit_task_tracker/
 
-          - name: Archive IPA
-            uses: actions/upload-artifact@v4
-            with:
-                name: release-ipa
-                # Try running the build locally with the build command to be sure of this path
-                path: habit_task_tracker/build/ios/ipa/App-dev.ipa
+      - name: Archive IPA
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-ipa
+          # Try running the build locally with the build command to be sure of this path
+          path: habit_task_tracker/build/ios/ipa/App-dev.ipa
