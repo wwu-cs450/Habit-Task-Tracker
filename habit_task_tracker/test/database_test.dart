@@ -36,7 +36,7 @@ void main() {
         "parameter4": null,
         "parameter5": [1, 2, 3],
         "parameter6": {"nestedKey": "nestedValue"},
-        };
+      };
 
       // Save the data
       await saveData(collection, dataId, data);
@@ -52,8 +52,6 @@ void main() {
       expect(loadedData['parameter4'], equals(null));
       expect(loadedData['parameter5'], equals([1, 2, 3]));
       expect(loadedData['parameter6']['nestedKey'], equals('nestedValue'));
-
     });
   });
-
 }

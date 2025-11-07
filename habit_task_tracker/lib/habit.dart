@@ -1,6 +1,6 @@
 import 'package:habit_task_tracker/backend.dart';
 
-enum Frequency { daily , weekly, monthly, yearly, none }
+enum Frequency { daily, weekly, monthly, yearly, none }
 
 Map<String, Frequency> frequencyMap = {
   'Frequency.daily': Frequency.daily,

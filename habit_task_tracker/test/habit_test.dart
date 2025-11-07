@@ -1,6 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:habit_task_tracker/habit.dart';
-import 'package:flutter/foundation.dart';
 
 void main() {
   group('Habit Model Test', () {
@@ -54,7 +53,7 @@ void main() {
       );
       expect(habit.gFrequency, Frequency.none);
     });
-    
+
     test('Habit toJson and fromJson Test', () {
       final habit = Habit(
         id: 'habit_4',
@@ -84,7 +83,5 @@ void main() {
       expect(habitFromJson.gIsRecurring, true);
       expect(habitFromJson.gFrequency, Frequency.daily);
     });
-
-    
   });
 }
