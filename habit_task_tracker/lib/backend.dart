@@ -6,19 +6,19 @@ final db = Localstore.instance;
 // Replace these with Habit/Task specific functions
 //-----------------------------------------------------------------
 Future<void> saveTask(String id, Map<String, dynamic> data) async {
-  await db.collection('sample').doc(id).set(data);
+  await db.collection('data/sample').doc(id).set(data);
 }
 
 Future<Map<String, dynamic>?> loadTask(String id) async {
-  return await db.collection('sample').doc(id).get();
+  return await db.collection('data/sample').doc(id).get();
 }
 
 //-----------------------------------------------------------------
 
 Future<void> saveData(String collection, String id, dynamic data) async {
-  await db.collection(collection).doc(id).set(data);
+  await db.collection('data/$collection').doc(id).set(data);
 }
 
 Future<dynamic> loadData(String collection, String id) async {
-  return await db.collection(collection).doc(id).get();
+  return await db.collection('data/$collection').doc(id).get();
 }

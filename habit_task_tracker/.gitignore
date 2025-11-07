@@ -45,5 +45,4 @@ app.*.map.json
 /android/app/release
 
 # Localstore database files
-/sample/
-/Habits/
+/data/
