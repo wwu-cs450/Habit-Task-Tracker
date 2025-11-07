@@ -40,8 +40,8 @@ class Log {
   }
 }
 
-int saveLog(Log log) {
-  saveData('Logs', log._id.toString(), log.toJson());
+Future<int> saveLog(Log log) async {
+  await saveData('Logs', log._id.toString(), log.toJson());
   return 0;
 }
 
