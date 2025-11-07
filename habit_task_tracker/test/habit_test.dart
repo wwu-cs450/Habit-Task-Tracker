@@ -28,13 +28,10 @@ void main() {
         isRecurring: false,
       );
 
-      saveHabit(habit);
-
-      // habit = null;
+      await saveHabit(habit);
 
       Habit habitLate = await loadHabit('habit_2');
 
-      //expect(habit, null);
       expect(habitLate.gId, 'habit_2');
       expect(habitLate.gName, 'Read Books');
       expect(habitLate.gFrequency, Frequency.daily);

@@ -66,9 +66,8 @@ class Habit {
   }
 }
 
-int saveHabit(Habit habit) {
-  saveData('Habits', habit._id, habit.toJson());
-  return 0;
+Future<void> saveHabit(Habit habit) async {
+  await saveData('Habits', habit.gId, habit.toJson());
 }
 
 Future<Habit> loadHabit(String id) async {
