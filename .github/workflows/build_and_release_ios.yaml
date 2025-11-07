@@ -1,4 +1,4 @@
-name: Build and distribute
+name: iOS - Build and Release
 
 on:
     workflow_dispatch:
@@ -9,27 +9,6 @@ on:
                 default: "main"
 
 jobs:
-    build_android:
-        name: build_android
-        runs-on: ubuntu-latest
-        steps:
-          - uses: actions/checkout@v4
-
-          - uses: cedvdb/action-flutter-build-android@v1
-            with:
-                keystore-base64: ${{ secrets.ANDROID_RELEASE_KEY }}
-                keystore-password: "${{ secrets.ANDROID_RELEASE_KEY_PASSWORD }}"
-                # optionals
-                build-cmd: flutter build apk --release --flavor dev
-                working-directory: ./habit_task_tracker/
-
-          - name: Archive APK
-            uses: actions/upload-artifact@v4
-            with:
-                name: release-apk
-                # Try running the build locally with the build command to be sure of this path
-                path: habit_task_tracker/build/app/outputs/flutter-apk/app-dev-release.apk
-
     build_ios:
         name: build_ios
         runs-on: macos-latest
