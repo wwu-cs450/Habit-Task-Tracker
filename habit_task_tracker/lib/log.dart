@@ -41,12 +41,12 @@ class Log {
 }
 
 int saveLog(Log log) {
-  saveData('Logs', log._id.toString(), log.toJson());
+  saveData('data/Logs', log._id.toString(), log.toJson());
   return 0;
 }
 
 Future<Log> loadLog(String id) async {
-  var data = await loadData('Logs', id);
+  var data = await loadData('data/Logs', id);
   if (data == null) {
     throw Exception('Log with id $id not found');
   }
