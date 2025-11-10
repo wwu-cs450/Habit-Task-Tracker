@@ -80,7 +80,7 @@ void main() {
       expect(habitFromJson.gIsRecurring, true);
       expect(habitFromJson.gFrequency, Frequency.daily);
     });
-    
+
     test('Complete Habit Test', () {
       final nonRecurringHabit = Habit(
         id: 'habit_5',
