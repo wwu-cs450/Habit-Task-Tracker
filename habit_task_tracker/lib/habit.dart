@@ -72,7 +72,7 @@ class Habit {
     if (isRecurring) {
       // Logic for calling LOG to update progress
       return 1;
-    } else if (!isRecurring && DateTime.now().isBefore(endDate)) {
+    } else if (!isRecurring && DateTime.now().isBefore(endDate.add(Duration(days: 1))) && DateTime.now().isAfter(startDate)) {
       _completed = true;
       return 1;
     } else {
