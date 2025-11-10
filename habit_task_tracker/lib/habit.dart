@@ -12,6 +12,7 @@ Map<String, Frequency> frequencyMap = {
 
 class Habit {
   final String _id;
+  dynamic _completed;
   String name;
   String? description;
   DateTime startDate;
@@ -41,6 +42,8 @@ class Habit {
 
   Frequency get gFrequency => frequency ?? Frequency.none;
 
+  dynamic get gCompleted => _completed;
+
   Map<String, dynamic> toJson() {
     return {
       'id': _id,
@@ -63,6 +66,20 @@ class Habit {
       isRecurring: json['isRecurring'],
       frequency: frequencyMap[json['frequency']] ?? Frequency.none,
     );
+  }
+
+  int complete() {
+    if (isRecurring){
+      // Logic for calling LOG to update progress
+      return 1;
+    }
+    else if (!isRecurring && DateTime.now().isBefore(endDate)) {
+      _completed = true;
+      return 1;
+    }
+    else {
+      return 0;
+    }
   }
 }
 
