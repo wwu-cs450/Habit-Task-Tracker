@@ -69,15 +69,13 @@ class Habit {
   }
 
   int complete() {
-    if (isRecurring){
+    if (isRecurring) {
       // Logic for calling LOG to update progress
       return 1;
-    }
-    else if (!isRecurring && DateTime.now().isBefore(endDate)) {
+    } else if (!isRecurring && DateTime.now().isBefore(endDate)) {
       _completed = true;
       return 1;
-    }
-    else {
+    } else {
       return 0;
     }
   }
