@@ -15,8 +15,7 @@ void main() {
       );
 
       // Save the log to the database
-      int saveResult = saveLog(testLog);
-      expect(saveResult, equals(0));
+      await saveLog(testLog);
 
       // Load the log from the database
       Log loadedLog = await loadLog(testLog.gId);
@@ -38,8 +37,7 @@ void main() {
       );
 
       // Save the log to the database
-      int saveResult = saveLog(testLog);
-      expect(saveResult, equals(0));
+      await saveLog(testLog);
 
       // Load the log from the database
       Log loadedLog = await loadLog(testLog.gId);
@@ -53,10 +51,7 @@ void main() {
 
     test('Load non-existent log throws exception', () async {
       // Attempt to load a log that doesn't exist
-      expect(
-        () async => await loadLog('nonexistent_log'),
-        throwsException,
-      );
+      expect(() async => await loadLog('nonexistent_log'), throwsException);
     });
   });
 }
