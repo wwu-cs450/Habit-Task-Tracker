@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'habit.dart';
+import 'backend.dart';
 
 // I got some help from GitHub CoPilot with this code. I also got some ideas from
 // this youtube video: https://www.youtube.com/watch?v=K4P5DZ9TRns
@@ -36,27 +39,95 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
-  // Temporarily start with two habits
-  final List<bool> _checked = List<bool>.filled(2, false, growable: true);
-  final List<bool> _expanded = List<bool>.filled(2, false, growable: true);
-  // THIS SHOULD SWITCH TO WORKING WITH A CLASS AND DB BUT TWO LISTS IS TEMPORARY SOLUTION
-  final List<String> _titles = List<String>.filled(2, 'Title', growable: true);
-  final List<String> _descriptions = List<String>.filled(
-    2,
-    'Description',
-    growable: true,
-  );
+  // Create lists to store habits and their UI state
+  // MORE OF THIS SHOULD PROBABLY BE HANDLED IN THE HABIT CLASS
+  List<Habit> _habits = <Habit>[];
+  final List<bool> _checked = <bool>[];
+  final List<bool> _expanded = <bool>[];
 
-  // Create habit method
-  void createHabit(String title, String description) {
-    setState(() {
-      _checked.add(false);
-      _expanded.add(false);
-      _titles.add(title);
-      _descriptions.add(description);
-    });
+  @override
+  void initState() {
+    super.initState();
+    _loadHabits();
   }
 
+  // Load habits from the database (currently localstore)
+  Future<void> _loadHabits() async {
+    try {
+      final Map<String, dynamic>? all = await db
+          .collection('data/Habits')
+          .get();
+      final List<Habit> list = <Habit>[];
+      final List<bool> loadedCompleted = <bool>[];
+      if (all != null) {
+        all.forEach((key, value) {
+          try {
+            final Map<String, dynamic> map = Map<String, dynamic>.from(value);
+            list.add(Habit.fromJson(map));
+            loadedCompleted.add(map['completed'] == true);
+          } catch (e) {
+            debugPrint('Failed to parse habit $key: $e');
+          }
+        });
+      }
+
+      // Match habits with their completed status, then sort them so newest is first
+      final List<MapEntry<Habit, bool>> paired = <MapEntry<Habit, bool>>[];
+      for (var i = 0; i < list.length; i++) {
+        paired.add(
+          MapEntry(
+            list[i],
+            i < loadedCompleted.length ? loadedCompleted[i] : false,
+          ),
+        );
+      }
+      paired.sort((a, b) => b.key.startDate.compareTo(a.key.startDate));
+
+      setState(() {
+        _habits = paired.map((e) => e.key).toList();
+        _checked.clear();
+        for (var e in paired) {
+          _checked.add(e.value);
+        }
+        _expanded.clear();
+        for (var _ in _habits) {
+          _expanded.add(false);
+        }
+      });
+    } catch (e) {
+      debugPrint('Error loading habits: $e');
+    }
+  }
+
+  // Create habit method
+  Future<void> createHabit(String title, String description) async {
+    final id = DateTime.now().millisecondsSinceEpoch.toString();
+    final habit = Habit(
+      id: id,
+      name: title,
+      description: description,
+      startDate: DateTime.now(),
+      endDate: DateTime.now().add(const Duration(days: 1)),
+      isRecurring: false,
+    );
+
+    setState(() {
+      _habits.insert(0, habit);
+      _checked.insert(0, false);
+      _expanded.insert(0, false);
+    });
+
+    try {
+      await db.collection('data/Habits').doc(id).set({
+        ...habit.toJson(),
+        'completed': false,
+      });
+    } catch (e) {
+      debugPrint('Failed to save habit: $e');
+    }
+  }
+
+  // THIS SHOULD PROBABLY BE HANDLED IN THE HABIT CLASS AND USED HERE
   // Delete habit method
   Future<void> deleteHabit(int index) async {
     if (index < 0 || index >= _checked.length) return;
@@ -78,24 +149,99 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
       ),
     );
     if (confirmed == true) {
+      final habit = _habits[index];
       setState(() {
+        _habits.removeAt(index);
         _checked.removeAt(index);
         _expanded.removeAt(index);
-        // Keep title/description lists in sync
-        if (index >= 0 && index < _titles.length) {
-          _titles.removeAt(index);
-        }
-        if (index >= 0 && index < _descriptions.length) {
-          _descriptions.removeAt(index);
-        }
       });
+
+      // Remove from the database (currently localstore)
+      try {
+        await db.collection('data/Habits').doc(habit.gId).delete();
+      } catch (e) {
+        debugPrint('Failed to delete habit ${habit.gId}: $e');
+      }
     }
+  }
+
+  // Show dialog to create a new habit with title and description fields
+  Future<void> _showCreateHabitDialog() async {
+    final titleController = TextEditingController();
+    final descController = TextEditingController();
+
+    final saved = await showDialog<bool>(
+      context: context,
+      barrierDismissible: true,
+      useRootNavigator: true,
+      builder: (context) => AlertDialog(
+        title: const Text('New Habit'),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: titleController,
+                decoration: const InputDecoration(labelText: 'Title'),
+                autofocus: false,
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: descController,
+                decoration: const InputDecoration(labelText: 'Description'),
+                maxLines: 3,
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          // Cancel button
+          TextButton(
+            onPressed: () async {
+              // Unfocus and hide keyboard before closing dialog
+              FocusManager.instance.primaryFocus?.unfocus();
+              try {
+                await SystemChannels.textInput.invokeMethod('TextInput.hide');
+              } catch (_) {}
+              await Future.delayed(const Duration(milliseconds: 150));
+              Navigator.of(context, rootNavigator: true).pop(false);
+            },
+            child: const Text('Cancel'),
+          ),
+          // Save button
+          TextButton(
+            onPressed: () async {
+              // Unfocus and hide keyboard before closing dialog
+              FocusManager.instance.primaryFocus?.unfocus();
+              try {
+                await SystemChannels.textInput.invokeMethod('TextInput.hide');
+              } catch (_) {}
+              await Future.delayed(const Duration(milliseconds: 150));
+              Navigator.of(context, rootNavigator: true).pop(true);
+            },
+            child: const Text('Save'),
+          ),
+        ],
+      ),
+    );
+
+    if (saved == true) {
+      final title = titleController.text.isEmpty
+          ? 'New Habit'
+          : titleController.text.trim();
+      final desc = descController.text.trim();
+      createHabit(title, desc.isEmpty ? 'Description' : desc);
+    }
+
+    titleController.dispose();
+    descController.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     // compute progress for the progress bar
-    int total = _checked.length;
+    // SHOULD PROBABLY BE MOVED TO A METHOD
+    int total = _habits.length;
     int done = _checked.where((v) => v).length;
     double progress = total == 0 ? 0.0 : done / total;
     return Scaffold(
@@ -131,7 +277,7 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
             // List of Habits
             Expanded(
               child: ListView.separated(
-                itemCount: _checked.length,
+                itemCount: _habits.length,
                 separatorBuilder: (context, index) =>
                     const SizedBox(height: 12),
                 itemBuilder: (context, index) {
@@ -151,17 +297,37 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
                               // Checkbox to mark habit as done/not done
                               leading: Checkbox(
                                 value: _checked[index],
-                                onChanged: (bool? value) {
+                                onChanged: (bool? value) async {
                                   setState(() {
-                                    // Update the habit status
                                     _checked[index] = value ?? false;
+                                    // Optionally update habit internal state (transient)
+                                    if (_checked[index]) {
+                                      try {
+                                        _habits[index].complete();
+                                      } catch (_) {}
+                                    }
                                   });
+
+                                  // Persist only the completed flag alongside the habit JSON.
+                                  try {
+                                    await db
+                                        .collection('data/Habits')
+                                        .doc(_habits[index].gId)
+                                        .set({
+                                          ..._habits[index].toJson(),
+                                          'completed': _checked[index],
+                                        });
+                                  } catch (e) {
+                                    debugPrint(
+                                      'Failed to persist completed state: $e',
+                                    );
+                                  }
                                 },
                               ),
-                              // Set the title and subtitle of the habit
-                              title: Text(_titles[index]),
+                              // Set the title and subtitle (description) of the habit
+                              title: Text(_habits[index].name),
                               subtitle: Text(
-                                _descriptions[index],
+                                _habits[index].description ?? '',
                                 maxLines: _expanded[index] ? null : 1,
                                 overflow: _expanded[index]
                                     ? TextOverflow.visible
@@ -185,12 +351,10 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
                                 ),
                                 child: Row(
                                   children: [
-                                    // Edit button
                                     IconButton(
                                       icon: const Icon(Icons.edit),
                                       tooltip: 'Edit',
                                       onPressed: () {
-                                        // Make this edit the habit visually and in the database
                                         ScaffoldMessenger.of(
                                           context,
                                         ).showSnackBar(
@@ -200,7 +364,6 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
                                         );
                                       },
                                     ),
-                                    // Delete button
                                     IconButton(
                                       icon: const Icon(Icons.delete),
                                       tooltip: 'Delete',
@@ -228,8 +391,8 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
         height: 80,
         child: FloatingActionButton(
           onPressed: () {
-            // Make this take information from user and store in the database
-            createHabit('New Habit', 'Description');
+            // Open dialog to collect habit details
+            _showCreateHabitDialog();
           },
           shape: const CircleBorder(),
           child: const Icon(Icons.add, size: 45),
