@@ -40,7 +40,7 @@ class MyHomePage extends StatefulWidget {
 
 class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
   // Create lists to store habits and their UI state
-  // MORE OF THIS SHOULD PROBABLY BE HANDLED IN THE HABIT CLASS
+  // THIS WILL BE HANDLED IN THE HABIT CLASS
   List<Habit> _habits = <Habit>[];
   final List<bool> _checked = <bool>[];
   final List<bool> _expanded = <bool>[];
