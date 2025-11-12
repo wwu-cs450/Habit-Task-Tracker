@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'habit.dart';
 import 'backend.dart';
+import 'log.dart';
 
 // I got some help from GitHub CoPilot with this code. I also got some ideas from
 // this youtube video: https://www.youtube.com/watch?v=K4P5DZ9TRns
@@ -54,43 +55,52 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
   // Load habits from the database (currently localstore)
   Future<void> _loadHabits() async {
     try {
-      final Map<String, dynamic>? all = await db
-          .collection('data/Habits')
-          .get();
+      final Map<String, dynamic>? all = await db.collection('data/Habits').get();
       final List<Habit> list = <Habit>[];
-      final List<bool> loadedCompleted = <bool>[];
       if (all != null) {
         all.forEach((key, value) {
           try {
             final Map<String, dynamic> map = Map<String, dynamic>.from(value);
             list.add(Habit.fromJson(map));
-            loadedCompleted.add(map['completed'] == true);
           } catch (e) {
             debugPrint('Failed to parse habit $key: $e');
           }
         });
       }
 
-      // Match habits with their completed status, then sort them so newest is first
+      // Load today's logs and derive which habits are completed today
+      final Map<String, dynamic>? allLogs = await db.collection('data/Logs').get();
+      final Set<String> completedToday = <String>{};
+      final now = DateTime.now();
+      if (allLogs != null) {
+        allLogs.forEach((key, value) {
+          try {
+            final Map<String, dynamic> lm = Map<String, dynamic>.from(value);
+            if (lm.containsKey('timestamp') && lm.containsKey('habitId')) {
+              final DateTime ts = DateTime.parse(lm['timestamp']).toLocal();
+              if (ts.year == now.year && ts.month == now.month && ts.day == now.day) {
+                completedToday.add(lm['habitId'] as String);
+              }
+            }
+          } catch (e) {
+            debugPrint('Failed to parse log $key: $e');
+          }
+        });
+      }
+
+      // Pair habits with whether they have a log today, then sort newest-first
       final List<MapEntry<Habit, bool>> paired = <MapEntry<Habit, bool>>[];
-      for (var i = 0; i < list.length; i++) {
-        paired.add(
-          MapEntry(
-            list[i],
-            i < loadedCompleted.length ? loadedCompleted[i] : false,
-          ),
-        );
+      for (var h in list) {
+        paired.add(MapEntry(h, completedToday.contains(h.gId)));
       }
       paired.sort((a, b) => b.key.startDate.compareTo(a.key.startDate));
 
       setState(() {
         _habits = paired.map((e) => e.key).toList();
         _checked.clear();
+        _expanded.clear();
         for (var e in paired) {
           _checked.add(e.value);
-        }
-        _expanded.clear();
-        for (var _ in _habits) {
           _expanded.add(false);
         }
       });
@@ -118,10 +128,7 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
     });
 
     try {
-      await db.collection('data/Habits').doc(id).set({
-        ...habit.toJson(),
-        'completed': false,
-      });
+      await saveHabit(habit);
     } catch (e) {
       debugPrint('Failed to save habit: $e');
     }
@@ -298,29 +305,27 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
                               leading: Checkbox(
                                 value: _checked[index],
                                 onChanged: (bool? value) async {
+                                  final newVal = value ?? false;
                                   setState(() {
-                                    _checked[index] = value ?? false;
+                                    _checked[index] = newVal;
                                     // Optionally update habit internal state (transient)
-                                    if (_checked[index]) {
+                                    if (newVal) {
                                       try {
                                         _habits[index].complete();
                                       } catch (_) {}
                                     }
                                   });
 
-                                  // Persist only the completed flag alongside the habit JSON.
-                                  try {
-                                    await db
-                                        .collection('data/Habits')
-                                        .doc(_habits[index].gId)
-                                        .set({
-                                          ..._habits[index].toJson(),
-                                          'completed': _checked[index],
-                                        });
-                                  } catch (e) {
-                                    debugPrint(
-                                      'Failed to persist completed state: $e',
-                                    );
+                                  // When checked, create a Log entry for today. We don't
+                                  // delete logs on uncheck for now (per request).
+                                  if (newVal) {
+                                    final lid = DateTime.now().millisecondsSinceEpoch.toString();
+                                    final log = Log(id: lid, timestamp: DateTime.now(), habitId: _habits[index].gId);
+                                    try {
+                                      await saveLog(log);
+                                    } catch (e) {
+                                      debugPrint('Failed to save log: $e');
+                                    }
                                   }
                                 },
                               ),
