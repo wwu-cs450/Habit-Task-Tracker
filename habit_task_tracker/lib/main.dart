@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'habit.dart';
 import 'backend.dart';
-import 'log.dart';
 
 // I got some help from GitHub CoPilot with this code. I also got some ideas from
 // this youtube video: https://www.youtube.com/watch?v=K4P5DZ9TRns
@@ -57,50 +56,39 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
     try {
       final Map<String, dynamic>? all = await db.collection('data/Habits').get();
       final List<Habit> list = <Habit>[];
+      final List<bool> loadedCompleted = <bool>[];
       if (all != null) {
         all.forEach((key, value) {
           try {
             final Map<String, dynamic> map = Map<String, dynamic>.from(value);
             list.add(Habit.fromJson(map));
+            loadedCompleted.add(map['completed'] == true);
           } catch (e) {
             debugPrint('Failed to parse habit $key: $e');
           }
         });
       }
 
-      // Load today's logs and derive which habits are completed today
-      final Map<String, dynamic>? allLogs = await db.collection('data/Logs').get();
-      final Set<String> completedToday = <String>{};
-      final now = DateTime.now();
-      if (allLogs != null) {
-        allLogs.forEach((key, value) {
-          try {
-            final Map<String, dynamic> lm = Map<String, dynamic>.from(value);
-            if (lm.containsKey('timestamp') && lm.containsKey('habitId')) {
-              final DateTime ts = DateTime.parse(lm['timestamp']).toLocal();
-              if (ts.year == now.year && ts.month == now.month && ts.day == now.day) {
-                completedToday.add(lm['habitId'] as String);
-              }
-            }
-          } catch (e) {
-            debugPrint('Failed to parse log $key: $e');
-          }
-        });
-      }
-
-      // Pair habits with whether they have a log today, then sort newest-first
+      // Match habits with their completed status, then sort them so newest is first
       final List<MapEntry<Habit, bool>> paired = <MapEntry<Habit, bool>>[];
-      for (var h in list) {
-        paired.add(MapEntry(h, completedToday.contains(h.gId)));
+      for (var i = 0; i < list.length; i++) {
+        paired.add(
+          MapEntry(
+            list[i],
+            i < loadedCompleted.length ? loadedCompleted[i] : false,
+          ),
+        );
       }
       paired.sort((a, b) => b.key.startDate.compareTo(a.key.startDate));
 
       setState(() {
         _habits = paired.map((e) => e.key).toList();
         _checked.clear();
-        _expanded.clear();
         for (var e in paired) {
           _checked.add(e.value);
+        }
+        _expanded.clear();
+        for (var _ in _habits) {
           _expanded.add(false);
         }
       });
@@ -128,7 +116,9 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
     });
 
     try {
-      await saveHabit(habit);
+      final Map<String, dynamic> m = habit.toJson();
+      m['completed'] = false;
+      await db.collection('data/Habits').doc(id).set(m);
     } catch (e) {
       debugPrint('Failed to save habit: $e');
     }
@@ -206,12 +196,13 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
           TextButton(
             onPressed: () async {
               // Unfocus and hide keyboard before closing dialog
+              final navigator = Navigator.of(context, rootNavigator: true);
               FocusManager.instance.primaryFocus?.unfocus();
               try {
                 await SystemChannels.textInput.invokeMethod('TextInput.hide');
               } catch (_) {}
               await Future.delayed(const Duration(milliseconds: 150));
-              Navigator.of(context, rootNavigator: true).pop(false);
+              navigator.pop(false);
             },
             child: const Text('Cancel'),
           ),
@@ -219,12 +210,13 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
           TextButton(
             onPressed: () async {
               // Unfocus and hide keyboard before closing dialog
+              final navigator = Navigator.of(context, rootNavigator: true);
               FocusManager.instance.primaryFocus?.unfocus();
               try {
                 await SystemChannels.textInput.invokeMethod('TextInput.hide');
               } catch (_) {}
               await Future.delayed(const Duration(milliseconds: 150));
-              Navigator.of(context, rootNavigator: true).pop(true);
+              navigator.pop(true);
             },
             child: const Text('Save'),
           ),
@@ -316,16 +308,23 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
                                     }
                                   });
 
-                                  // When checked, create a Log entry for today. We don't
-                                  // delete logs on uncheck for now (per request).
-                                  if (newVal) {
-                                    final lid = DateTime.now().millisecondsSinceEpoch.toString();
-                                    final log = Log(id: lid, timestamp: DateTime.now(), habitId: _habits[index].gId);
-                                    try {
-                                      await saveLog(log);
-                                    } catch (e) {
-                                      debugPrint('Failed to save log: $e');
-                                    }
+                                  // Persist the completed flag on the habit document.
+                                  final habit = _habits[index];
+                                  final messenger = ScaffoldMessenger.of(context);
+                                  try {
+                                    final Map<String, dynamic> m = habit.toJson();
+                                    m['completed'] = newVal;
+                                    await db.collection('data/Habits').doc(habit.gId).set(m);
+                                  } catch (e) {
+                                    debugPrint('Failed to update habit completed: $e');
+                                    // revert UI state on failure
+                                    if (!mounted) return;
+                                    setState(() {
+                                      _checked[index] = !newVal;
+                                    });
+                                    messenger.showSnackBar(
+                                      const SnackBar(content: Text('Failed to save state')),
+                                    );
                                   }
                                 },
                               ),
