@@ -35,7 +35,7 @@ class MyApp extends StatelessWidget {
   static void onNotificationPressed(NotificationResponse response) {
     final String? payload = response.payload;
     // In future, highlight specific habit based on payload
-    print('Notification tapped for habit with id: $payload');
+    // print('Notification tapped for habit with id: $payload');
   }
 }
 
