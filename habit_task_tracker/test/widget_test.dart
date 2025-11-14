@@ -17,20 +17,42 @@ void main() {
     // Build our app and trigger a frame.
     await tester.pumpWidget(const MyApp());
 
-    // The app starts with two habit cards (per the initial lists)
+    // Test adding habits
+
+    // Ensure there are 0 habits initially
     expect(find.byType(Card), findsNWidgets(0));
 
-    // Tap the '+' icon and trigger a frame to add a new habit.
+    // Open the dialog for adding a new habit
     await tester.tap(find.byIcon(Icons.add));
-    await tester.pumpAndSettle(); // wait for the dialog to appear
+    await tester.pumpAndSettle();
 
+    // Populate the fields in the dialog
     await tester.enterText(find.byType(TextField).at(0), 'Test Habit');
     await tester.enterText(find.byType(TextField).at(1), 'Test description');
 
+    // Save the habit
     await tester.tap(find.text('Save'));
     await tester.pumpAndSettle();
 
-    // Verify that a new card was added.
+    // Ensure that the card was added
     expect(find.byType(Card), findsNWidgets(1));
+
+    // Test deleting habits
+
+    // Tap the card for the habit that was just added
+    await tester.tap(find.text('Test Habit'));
+    await tester.pumpAndSettle();
+
+    // Click the delete button
+    final deleteFinder = find.widgetWithIcon(IconButton, Icons.delete).first;
+    await tester.tap(deleteFinder);
+    await tester.pumpAndSettle();
+
+    // Confirm deletion in a dialog that appears
+    await tester.tap(find.text('Delete'));
+    await tester.pumpAndSettle();
+
+    // Ensure the card was deleted
+    expect(find.byType(Card), findsNothing);
   });
 }
