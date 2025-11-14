@@ -10,6 +10,7 @@ void main() {
   runApp(const MyApp());
 }
 
+// Class to provide styling and information for the entire app
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
@@ -29,6 +30,7 @@ class MyApp extends StatelessWidget {
   }
 }
 
+// Class to hold title and state for the home page
 class MyHomePage extends StatefulWidget {
   const MyHomePage({super.key, required this.title});
 
@@ -38,12 +40,15 @@ class MyHomePage extends StatefulWidget {
   State<MyHomePage> createState() => _MyHomePageState();
 }
 
+// Main state class for the home page
 class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
   // Create lists to store habits and their UI state
-  // THIS WILL BE HANDLED IN THE HABIT CLASS
+  // THIS WILL BE HANDLED IN THE HABIT CLASS BY STORING LOGS
   List<Habit> _habits = <Habit>[];
   final List<bool> _checked = <bool>[];
   final List<bool> _expanded = <bool>[];
+  // Current progress value (0.0 - 1.0) shown by the LinearProgressIndicator
+  double progress = 0.0;
 
   @override
   void initState() {
@@ -54,7 +59,9 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
   // Load habits from the database (currently localstore)
   Future<void> _loadHabits() async {
     try {
-      final Map<String, dynamic>? all = await db.collection('data/Habits').get();
+      final Map<String, dynamic>? all = await db
+          .collection('data/Habits')
+          .get();
       final List<Habit> list = <Habit>[];
       final List<bool> loadedCompleted = <bool>[];
       if (all != null) {
@@ -92,11 +99,23 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
           _expanded.add(false);
         }
       });
+      // Update progress after loading
+      _updateProgressBar(_habits.length, _checked.where((v) => v).length);
     } catch (e) {
       debugPrint('Error loading habits: $e');
     }
   }
 
+  // Method for updating the Progress Bar
+  void _updateProgressBar(int total, int done) {
+    final double p = total == 0 ? 0.0 : done / total;
+    if (!mounted) return;
+    setState(() {
+      progress = p;
+    });
+  }
+
+  // THIS SHOULD PROBABLY BE HANDLED IN THE HABIT CLASS AND USED HERE
   // Create habit method
   Future<void> createHabit(String title, String description) async {
     final id = DateTime.now().millisecondsSinceEpoch.toString();
@@ -114,6 +133,8 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
       _checked.insert(0, false);
       _expanded.insert(0, false);
     });
+    // Update progress after adding
+    _updateProgressBar(_habits.length, _checked.where((v) => v).length);
 
     try {
       final Map<String, dynamic> m = habit.toJson();
@@ -153,6 +174,9 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
         _expanded.removeAt(index);
       });
 
+      // Update progress after deletion
+      _updateProgressBar(_habits.length, _checked.where((v) => v).length);
+
       // Remove from the database (currently localstore)
       try {
         await db.collection('data/Habits').doc(habit.gId).delete();
@@ -186,7 +210,12 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
               TextField(
                 controller: descController,
                 decoration: const InputDecoration(labelText: 'Description'),
+                keyboardType: TextInputType.multiline,
+                // Allow the field to grow as the user types and keep the
+                // caret/text aligned at the top of the field.
+                minLines: 1,
                 maxLines: 3,
+                textAlignVertical: TextAlignVertical.top,
               ),
             ],
           ),
@@ -236,13 +265,9 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
     descController.dispose();
   }
 
+  // MAIN BODY BUILD METHOD
   @override
   Widget build(BuildContext context) {
-    // compute progress for the progress bar
-    // SHOULD PROBABLY BE MOVED TO A METHOD
-    int total = _habits.length;
-    int done = _checked.where((v) => v).length;
-    double progress = total == 0 ? 0.0 : done / total;
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
@@ -287,7 +312,7 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
                       child: Card(
                         elevation: 2,
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
+                          borderRadius: BorderRadius.circular(10),
                         ),
                         child: Column(
                           mainAxisSize: MainAxisSize.min,
@@ -308,22 +333,41 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
                                     }
                                   });
 
-                                  // Persist the completed flag on the habit document.
+                                  // Update the progress bar after changes
+                                  _updateProgressBar(
+                                    _habits.length,
+                                    _checked.where((v) => v).length,
+                                  );
+
+                                  // Save the habit status
                                   final habit = _habits[index];
-                                  final messenger = ScaffoldMessenger.of(context);
+                                  final messenger = ScaffoldMessenger.of(
+                                    context,
+                                  );
                                   try {
-                                    final Map<String, dynamic> m = habit.toJson();
+                                    final Map<String, dynamic> m = habit
+                                        .toJson();
                                     m['completed'] = newVal;
-                                    await db.collection('data/Habits').doc(habit.gId).set(m);
+                                    await db
+                                        .collection('data/Habits')
+                                        .doc(habit.gId)
+                                        .set(m);
+                                  // Handle issues and revert changes on failure
                                   } catch (e) {
-                                    debugPrint('Failed to update habit completed: $e');
                                     // revert UI state on failure
                                     if (!mounted) return;
                                     setState(() {
                                       _checked[index] = !newVal;
                                     });
+                                    // Update progress after reverting the change
+                                    _updateProgressBar(
+                                      _habits.length,
+                                      _checked.where((v) => v).length,
+                                    );
                                     messenger.showSnackBar(
-                                      const SnackBar(content: Text('Failed to save state')),
+                                      const SnackBar(
+                                        content: Text('Failed to save state'),
+                                      ),
                                     );
                                   }
                                 },
