@@ -76,6 +76,21 @@ class Notification {
 
     // Configure the local timezone.
     _configureLocalTimeZone();
+
+    // Test notification
+    final testHabit = Habit(
+      id: 'test_habit',
+      name: 'Test Habit',
+      startDate: DateTime.now(),
+      endDate: DateTime.now().add(const Duration(days: 30)),
+      isRecurring: true,
+    );
+    final notification = Notification(
+      testHabit,
+      'Time to work on your habit!',
+      'Keep up the good work with your habit: ${testHabit.gName}',
+    );
+    await notification.showImmediately();
   }
 
   static Future<void> _configureLocalTimeZone() async {
