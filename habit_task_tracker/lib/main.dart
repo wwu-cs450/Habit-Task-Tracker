@@ -9,6 +9,7 @@ import 'backend.dart';
 // this youtube video: https://www.youtube.com/watch?v=K4P5DZ9TRns
 
 Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
   const MyApp app = MyApp();
   // Initialize notification service
   await notifier.Notification.initialize(MyApp.onNotificationPressed);
