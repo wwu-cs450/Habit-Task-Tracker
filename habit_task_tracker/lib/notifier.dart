@@ -169,10 +169,9 @@ class Notification {
       tz.local,
     );
 
-    Frequency frequency;
     // Look up habit to get frequency
     final Habit? habit = Habit.fromId(habitId);
-    frequency = habit?.frequency ?? Frequency.none;
+    final frequency = habit?.frequency ?? Frequency.none;
 
     // Determine the repeat interval based on frequency
     final DateTimeComponents? repeatInterval;
