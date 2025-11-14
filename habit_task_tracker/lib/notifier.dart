@@ -160,7 +160,7 @@ class Notification {
       notifTitle, // Notification title.
       notifBody, // Notification body.
       notificationDetails, // Platform-specific details.
-      payload: habitId.toString(), // Send habit ID as payload
+      payload: habitId, // Send habit ID as payload
     );
   }
 
