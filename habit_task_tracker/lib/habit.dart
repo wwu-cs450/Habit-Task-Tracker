@@ -1,5 +1,5 @@
 import 'package:habit_task_tracker/backend.dart';
-import 'package:habit_task_tracker/log.dart';
+//import 'package:habit_task_tracker/log.dart';
 
 enum Frequency { daily, weekly, monthly, yearly, none }
 
