@@ -150,6 +150,9 @@ class Notification {
   }
 
   Future<void> showImmediately({String? title, String? body}) async {
+    // TZ needs to be initialized **first**
+    await _configureLocalTimeZone();
+
     final String notifTitle = title ?? this.title;
     final String notifBody = body ?? this.body;
     flutterLocalNotificationsPlugin.show(
@@ -166,6 +169,9 @@ class Notification {
     DateTime scheduledDate, {
     Duration offset = const Duration(hours: 1),
   }) async {
+    // TZ needs to be initialized **first**
+    await _configureLocalTimeZone();
+
     // Convert scheduledDate to TZDateTime
     final tz.TZDateTime tzScheduledDate = tz.TZDateTime.from(
       scheduledDate.subtract(offset),
