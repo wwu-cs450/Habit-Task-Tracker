@@ -1,9 +1,12 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:habit_task_tracker/backend.dart';
+import '_setup_mocks.dart';
 
 // sample test to verify saving and loading data from the localstore database
 // delete this test when backend is functional
 void main() {
+  setUpAll(setupMocks);
+
   group('Database Sample Test', () {
     test('Save and Load Task', () async {
       String taskId = 'test_task_1';
