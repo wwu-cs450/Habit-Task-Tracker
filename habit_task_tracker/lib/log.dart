@@ -71,7 +71,7 @@ class Log {
     }
 
     if (totalOpportunities <= 0) return 0;
-    
+
     return min(((timeStamps.length / totalOpportunities) * 100).round(), 100);
   }
 }
