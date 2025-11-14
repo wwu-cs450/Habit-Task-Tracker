@@ -76,7 +76,7 @@ class Notification {
     );
 
     // Request runtime permissions for notifications.
-    // These perms are also listed in the app manifest files
+    // These permissions are also listed in the app manifest files
     final androidImpl = flutterLocalNotificationsPlugin
         .resolvePlatformSpecificImplementation<
           AndroidFlutterLocalNotificationsPlugin
@@ -96,7 +96,7 @@ class Notification {
     // Configure the local timezone.
     await _configureLocalTimeZone();
 
-    // Sends two test notifications for smoke testing purposes.
+    // Sends three test notifications for smoke testing purposes.
     // Run by adding `--dart-define=NOTIF_TEST=true` to `flutter run` command.
     await _maybeRunSmokeTest();
   }
@@ -155,7 +155,7 @@ class Notification {
 
     final String notifTitle = title ?? this.title;
     final String notifBody = body ?? this.body;
-    flutterLocalNotificationsPlugin.show(
+    await flutterLocalNotificationsPlugin.show(
       habitId.hashCode, // Unique ID for the notification.
       notifTitle, // Notification title.
       notifBody, // Notification body.
