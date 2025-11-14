@@ -2,6 +2,7 @@ import 'package:habit_task_tracker/backend.dart';
 import 'package:habit_task_tracker/log.dart';
 import 'package:habit_task_tracker/notifier.dart' as notifier;
 import 'package:duration/duration.dart';
+import 'dart:async';
 
 enum Frequency { daily, weekly, monthly, yearly, none }
 
@@ -142,7 +143,7 @@ class Habit {
     );
     notifications.add(notification);
     // `Notification.showScheduled` handles recurrence automatically
-    notification.showScheduled(notifDateTime, offset: offset);
+    unawaited(notification.showScheduled(notifDateTime, offset: offset));
     return this;
   }
 
