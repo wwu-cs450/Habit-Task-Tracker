@@ -2,7 +2,6 @@ import 'package:habit_task_tracker/backend.dart';
 import 'package:habit_task_tracker/log.dart';
 import 'package:habit_task_tracker/notifier.dart' as notifier;
 import 'package:duration/duration.dart';
-import 'dart:async';
 import 'package:logger/logger.dart';
 
 enum Frequency { daily, weekly, monthly, yearly, none }
