@@ -118,19 +118,11 @@ class Habit {
   Habit withNotification({Duration offset = const Duration(hours: 1)}) {
     // Ensure that startDate is in the future
     // Might be smart to do this in the initializer
-    final DateTime notifDateTime;
-    if (startDate.subtract(offset).isBefore(DateTime.now())) {
-      notifDateTime = DateTime.now()
-          .add(offset)
-          .add(const Duration(seconds: 1));
-    } else {
-      notifDateTime = startDate;
-    }
-    final actualDuration = notifDateTime.difference(DateTime.now());
+    final DateTime notifDateTime = startDate.add(offset);
     final notification = notifier.Notification(
       this,
       'Reminder for $name',
-      'Don\'t forget to complete your habit!\nIt\'s due in ${actualDuration.pretty(abbreviated: false)}.',
+      'Don\'t forget to complete your habit!\nIt\'s due in ${offset.pretty(abbreviated: false)}.',
     );
     notifications.add(notification);
     // `Notification.showScheduled` handles recurrence automatically
