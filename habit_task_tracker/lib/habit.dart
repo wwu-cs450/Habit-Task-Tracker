@@ -29,6 +29,8 @@ class Habit {
   Frequency frequency;
   Log log;
   List<notifier.Notification> notifications;
+  // Should only be accessed from the main isolate
+  // for thread safety
   static final Map<String, Habit> _habitCache = {};
   static final logger = Logger();
   factory Habit({
