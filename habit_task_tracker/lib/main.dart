@@ -47,8 +47,11 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
   List<Habit> _habits = <Habit>[];
   final List<bool> _checked = <bool>[];
   final List<bool> _expanded = <bool>[];
-  // Current progress value (0.0 - 1.0) shown by the LinearProgressIndicator
+
   double progress = 0.0;
+  // Key used to control the Scaffold (open drawers etc.) from widgets whose
+  // BuildContext isn't beneath the Scaffold.
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
   @override
   void initState() {
@@ -269,9 +272,66 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      key: _scaffoldKey,
       appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.menu),
+          onPressed: () => _scaffoldKey.currentState?.openDrawer(),
+        ),
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
         title: Text(widget.title),
+      ),
+
+      // Navigation Menu
+      drawer: Drawer(
+        width: MediaQuery.of(context).size.width * 0.6,
+        child: SafeArea(
+          child: ListView(
+            padding: EdgeInsets.zero,
+            children: [
+              // Header with close button
+              Container(
+                height: 56,
+                padding: const EdgeInsets.all(8.0),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+                child: Align(
+                  alignment: Alignment.topRight,
+                  child: IconButton(
+                    icon: const Icon(Icons.close, color: Colors.white),
+                    onPressed: () {
+                      Navigator.pop(context); // Close the drawer
+                    },
+                  ),
+                ),
+              ),
+              // NEEDS TO BE UPDATED TO LINK TO DASHBOARD PAGE
+              ListTile(
+                leading: const Icon(Icons.home),
+                title: const Text('Dashboard'),
+                onTap: () {
+                  debugPrint('Dashboard tapped');
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.check_circle),
+                title: const Text('Habits'),
+                onTap: () {
+                  Navigator.pop(context);
+                },
+              ),
+              // NEEDS TO BE UPDATED TO LINK TO CALENDAR PAGE
+              ListTile(
+                leading: const Icon(Icons.calendar_today),
+                title: const Text('Calendar'),
+                onTap: () {
+                  debugPrint('Calendar tapped');
+                },
+              ),
+            ],
+          ),
+        ),
       ),
 
       body: Padding(
@@ -399,6 +459,8 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
                                 ),
                                 child: Row(
                                   children: [
+                                    // Habit Edit Button
+                                    // EDITING STILL NEEDS TO BE IMPLEMENTED. SHOULD PROBABLY BE IN HABIT CLASS
                                     IconButton(
                                       icon: const Icon(Icons.edit),
                                       tooltip: 'Edit',
@@ -407,11 +469,12 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
                                           context,
                                         ).showSnackBar(
                                           SnackBar(
-                                            content: Text('Edit ${index + 1}'),
+                                            content: Text('Edit ${_habits[index].name}'),
                                           ),
                                         );
                                       },
                                     ),
+                                    // Habit Delete Button
                                     IconButton(
                                       icon: const Icon(Icons.delete),
                                       tooltip: 'Delete',
