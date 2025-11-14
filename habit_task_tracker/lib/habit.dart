@@ -117,17 +117,6 @@ class Habit {
     ;
   }
 
-  static Habit? getById(String id) {
-    try {
-      // First search currently loaded habits
-      return Habit.fromId(id);
-    } catch (e) {
-      // Then search database
-      // Currently waiting on PR #43 to merge before implementing
-      return null;
-    }
-  }
-
   // Schedule notification for a habit. Automatically
   // handles scheduling, recurrence, etc. This function
   // is not idempotent *yet*; that's a stretch goal.
