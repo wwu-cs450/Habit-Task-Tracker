@@ -39,9 +39,9 @@ dependencies:
   timezone: ^0.10.1
   flutter_timezone: ^5.0.1
   duration: ^4.0.3
+  logger: ^2.6.2
 
 dev_dependencies:
-  logger: ^2.6.2
   mockito: ^5.5.1
   plugin_platform_interface: ^2.1.8
   flutter_test:
