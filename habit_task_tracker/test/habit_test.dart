@@ -80,7 +80,7 @@ void main() {
       expect(habitFromJson.gIsRecurring, true);
       expect(habitFromJson.gFrequency, Frequency.daily);
     });
-    
+
     test('Delete Habit Test', () async {
       final habit = Habit(
         id: 'habit_8',
@@ -96,7 +96,7 @@ void main() {
       dynamic loadedHabit;
       // expect error from loading deleted habit
       try {
-        dynamic loadedHabit = await loadHabit('habit_8');
+        loadedHabit = await loadHabit('habit_8');
       } catch (e) {
         loadedHabit = null;
       }
