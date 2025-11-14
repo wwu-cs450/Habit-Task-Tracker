@@ -116,7 +116,7 @@ void main() {
 
       expect(outOfRangeHabit.complete(), 0);
     });
-    
+
     test('Delete Habit Test', () async {
       final habit = Habit(
         id: 'habit_8',
@@ -133,11 +133,10 @@ void main() {
       // expect error from loading deleted habit
       try {
         dynamic loadedHabit = await loadHabit('habit_8');
-      }
-      catch (e) {
+      } catch (e) {
         loadedHabit = null;
       }
-      
+
       expect(loadedHabit, isNull);
     });
   });
