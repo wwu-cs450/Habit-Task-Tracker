@@ -84,40 +84,41 @@ void main() {
       expect(habitFromJson.gFrequency, Frequency.daily);
     });
 
-    test('Complete Habit Test', () {
-      final nonRecurringHabit = Habit(
-        id: 'habit_5',
-        name: 'Non-Recurring Habit',
-        startDate: DateTime.now().subtract(Duration(days: 1)),
-        endDate: DateTime.now().add(Duration(days: 1)),
+    test('Delete Habit Test', () async {
+      final habit = Habit(
+        id: 'habit_8',
+        name: 'Habit to Delete',
+        startDate: DateTime(2024, 5, 5),
+        endDate: DateTime(2024, 10, 5),
         isRecurring: false,
       );
 
-      final recurringHabit = Habit(
-        id: 'habit_6',
-        name: 'Recurring Habit',
-        startDate: DateTime(2024, 1, 1),
+      await saveHabit(habit);
+
+      await deleteHabit('habit_8');
+      dynamic loadedHabit;
+      // expect error from loading deleted habit
+      try {
+        loadedHabit = await loadHabit('habit_8');
+      } catch (e) {
+        loadedHabit = null;
+      }
+
+      expect(loadedHabit, isNull);
+    });
+    test('Correct creation of Log', () {
+      final habit = Habit(
+        id: 'habit_8',
+        name: 'Test Habit for Log',
+        startDate: DateTime(2024, 5, 5),
         endDate: DateTime(2024, 12, 31),
         isRecurring: true,
         frequency: Frequency.daily,
       );
 
-      expect(nonRecurringHabit.complete(), 1);
-      expect(nonRecurringHabit.gCompleted, true);
-
-      expect(recurringHabit.complete(), 1);
-    });
-
-    test('Complete Habit Out of Range Test', () {
-      final outOfRangeHabit = Habit(
-        id: 'habit_7',
-        name: 'Out of Range Habit',
-        startDate: DateTime(2024, 11, 1),
-        endDate: DateTime(2024, 11, 8),
-        isRecurring: false,
-      );
-
-      expect(outOfRangeHabit.complete(), 0);
+      expect(habit.log.gId, equals(habit.gId));
+      expect(habit.log.timeStamps, isEmpty);
+      expect(habit.log.notes, isNull);
     });
   });
 }

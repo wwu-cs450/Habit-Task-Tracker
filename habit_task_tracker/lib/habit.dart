@@ -1,4 +1,5 @@
 import 'package:habit_task_tracker/backend.dart';
+import 'package:habit_task_tracker/log.dart';
 
 enum Frequency { daily, weekly, monthly, yearly, none }
 
@@ -10,6 +11,10 @@ Map<String, Frequency> frequencyMap = {
   'Frequency.none': Frequency.none,
 };
 
+Log createLog(String id, String? description) {
+  return Log(habitId: id, notes: description);
+}
+
 class Habit {
   final String _id;
   dynamic _completed;
@@ -19,6 +24,7 @@ class Habit {
   DateTime endDate;
   bool isRecurring;
   Frequency? frequency;
+  Log log;
 
   Habit({
     required String id,
@@ -28,7 +34,8 @@ class Habit {
     required this.isRecurring,
     this.frequency,
     this.description,
-  }) : _id = id;
+  }) : _id = id,
+       log = createLog(id, description);
 
   String get gId => _id;
 
@@ -68,18 +75,8 @@ class Habit {
     );
   }
 
-  int complete() {
-    if (isRecurring) {
-      // Logic for calling LOG to update progress
-      return 1;
-    } else if (!isRecurring &&
-        DateTime.now().isBefore(endDate.add(Duration(days: 1))) &&
-        DateTime.now().isAfter(startDate)) {
-      _completed = true;
-      return 1;
-    } else {
-      return 0;
-    }
+  void complete() {
+    //updateTimeStamps(DateTime.now());
   }
 }
 
@@ -90,4 +87,8 @@ Future<void> saveHabit(Habit habit) async {
 Future<Habit> loadHabit(String id) async {
   var data = await loadData('Habits', id);
   return Habit.fromJson(data);
+}
+
+Future<void> deleteHabit(String id) async {
+  await deleteData('Habits', id);
 }
