@@ -91,3 +91,7 @@ Future<Habit> loadHabit(String id) async {
   var data = await loadData('Habits', id);
   return Habit.fromJson(data);
 }
+
+Future<void> deleteHabit(String id) async {
+  await deleteData('Habits', id);
+}

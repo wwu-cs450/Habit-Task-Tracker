@@ -116,5 +116,29 @@ void main() {
 
       expect(outOfRangeHabit.complete(), 0);
     });
+    
+    test('Delete Habit Test', () async {
+      final habit = Habit(
+        id: 'habit_8',
+        name: 'Habit to Delete',
+        startDate: DateTime(2024, 5, 5),
+        endDate: DateTime(2024, 10, 5),
+        isRecurring: false,
+      );
+
+      await saveHabit(habit);
+
+      await deleteHabit('habit_8');
+      dynamic loadedHabit;
+      // expect error from loading deleted habit
+      try {
+        dynamic loadedHabit = await loadHabit('habit_8');
+      }
+      catch (e) {
+        loadedHabit = null;
+      }
+      
+      expect(loadedHabit, isNull);
+    });
   });
 }

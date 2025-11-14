@@ -22,3 +22,7 @@ Future<void> saveData(String collection, String id, dynamic data) async {
 Future<dynamic> loadData(String collection, String id) async {
   return await db.collection('data/$collection').doc(id).get();
 }
+
+Future<void> deleteData(String collection, String id) async {
+  await db.collection('data/$collection').doc(id).delete();
+}
