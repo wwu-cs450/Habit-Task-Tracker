@@ -117,23 +117,24 @@ class Habit {
   //
   // Intended to be used like this:
   //   final habit = Habit(...).withNotification();
-  Habit withNotification({Duration offset = const Duration(hours: 1)}) {
+  Habit withNotification({
+    Duration reminderLeadTime = const Duration(hours: 1),
+  }) {
     // Ensure that startDate is in the future
     // Might be smart to do this in the initializer
-    final DateTime notifDateTime = startDate.add(offset);
+    final DateTime notifDateTime = startDate.add(reminderLeadTime);
     final notification = notifier.Notification(
       this,
       'Reminder for $name',
-      'Don\'t forget to complete your habit!\nIt\'s due in ${offset.pretty(abbreviated: false)}.',
+      'Don\'t forget to complete your habit!\nIt\'s due in ${reminderLeadTime.pretty(abbreviated: false)}.',
     );
     notifications.add(notification);
     // `Notification.showScheduled` handles recurrence automatically
-    notification.showScheduled(notifDateTime, offset: offset).catchError((
-      e,
-      stack,
-    ) {
-      logger.e('Failed to schedule notification: $e');
-    });
+    notification
+        .showScheduled(notifDateTime, reminderLeadTime: reminderLeadTime)
+        .catchError((e, stack) {
+          logger.e('Failed to schedule notification: $e');
+        });
     return this;
   }
 

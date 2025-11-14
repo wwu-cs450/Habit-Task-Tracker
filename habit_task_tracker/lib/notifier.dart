@@ -120,7 +120,7 @@ class Notification {
     );
     await n1.showScheduled(
       now.add(const Duration(seconds: 10)),
-      offset: Duration.zero,
+      reminderLeadTime: Duration.zero,
     );
     final n2 = Notification._internal(
       'debug-smoke-2',
@@ -129,7 +129,7 @@ class Notification {
     );
     await n2.showScheduled(
       now.add(const Duration(seconds: 20)),
-      offset: Duration.zero,
+      reminderLeadTime: Duration.zero,
     );
     final n3 = Notification._internal(
       'debug-smoke-3',
@@ -164,17 +164,17 @@ class Notification {
     );
   }
 
-  // Schedule notification at scheduledDate minus offset
+  // Schedule notification at scheduledDate minus lead time
   Future<void> showScheduled(
     DateTime scheduledDate, {
-    Duration offset = const Duration(hours: 1),
+    Duration reminderLeadTime = const Duration(hours: 1),
   }) async {
     // TZ needs to be initialized **first**
     await _configureLocalTimeZone();
 
     // Convert scheduledDate to TZDateTime
     final tz.TZDateTime tzScheduledDate = tz.TZDateTime.from(
-      scheduledDate.subtract(offset),
+      scheduledDate.subtract(reminderLeadTime),
       tz.local,
     );
 
