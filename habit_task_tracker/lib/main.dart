@@ -1,10 +1,16 @@
 import 'package:flutter/material.dart';
+import 'package:habit_task_tracker/notifier.dart' as notifier;
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
 // I got some help from GitHub CoPilot with this code. I also got some ideas from
 // this youtube video: https://www.youtube.com/watch?v=K4P5DZ9TRns
 
-void main() {
-  runApp(const MyApp());
+Future<void> main() async {
+  const MyApp app = MyApp();
+  // Initialize notification service
+  await notifier.Notification.initialize(MyApp.onNotificationPressed);
+
+  runApp(app);
 }
 
 class MyApp extends StatelessWidget {
@@ -23,6 +29,13 @@ class MyApp extends StatelessWidget {
       ),
       home: const MyHomePage(title: 'Habits'),
     );
+  }
+
+  // Callback for notification pressed while app is running
+  static void onNotificationPressed(NotificationResponse response) {
+    final String? payload = response.payload;
+    // In future, highlight specific habit based on payload
+    print('Notification tapped for habit with id: $payload');
   }
 }
 
