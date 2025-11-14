@@ -18,13 +18,19 @@ void main() {
     await tester.pumpWidget(const MyApp());
 
     // The app starts with two habit cards (per the initial lists)
-    expect(find.byType(Card), findsNWidgets(2));
+    expect(find.byType(Card), findsNWidgets(0));
 
     // Tap the '+' icon and trigger a frame to add a new habit.
     await tester.tap(find.byIcon(Icons.add));
-    await tester.pump();
+    await tester.pumpAndSettle(); // wait for the dialog to appear
+
+    await tester.enterText(find.byType(TextField).at(0), 'Test Habit');
+    await tester.enterText(find.byType(TextField).at(1), 'Test description');
+
+    await tester.tap(find.text('Save'));
+    await tester.pumpAndSettle();
 
     // Verify that a new card was added.
-    expect(find.byType(Card), findsNWidgets(3));
+    expect(find.byType(Card), findsNWidgets(1));
   });
 }
