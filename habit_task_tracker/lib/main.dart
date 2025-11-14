@@ -49,8 +49,6 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
   final List<bool> _expanded = <bool>[];
 
   double progress = 0.0;
-  // Key used to control the Scaffold (open drawers etc.) from widgets whose
-  // BuildContext isn't beneath the Scaffold.
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
   @override
@@ -214,8 +212,6 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
                 controller: descController,
                 decoration: const InputDecoration(labelText: 'Description'),
                 keyboardType: TextInputType.multiline,
-                // Allow the field to grow as the user types and keep the
-                // caret/text aligned at the top of the field.
                 minLines: 1,
                 maxLines: 3,
                 textAlignVertical: TextAlignVertical.top,
@@ -301,7 +297,7 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
                   child: IconButton(
                     icon: const Icon(Icons.close, color: Colors.white),
                     onPressed: () {
-                      Navigator.pop(context); // Close the drawer
+                      Navigator.pop(context);
                     },
                   ),
                 ),
@@ -347,7 +343,7 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
                     child: LinearProgressIndicator(
                       value: progress,
                       minHeight: 10,
-                      // Need to decide what colors to use here
+                      // NEED TO DECIDE WHAT COLORS TO USE HERE
                       backgroundColor: Colors.grey.shade300,
                       color: Colors.greenAccent,
                     ),
@@ -385,7 +381,7 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
                                   final newVal = value ?? false;
                                   setState(() {
                                     _checked[index] = newVal;
-                                    // Optionally update habit internal state (transient)
+                                    // Optionally update habit internal state
                                     if (newVal) {
                                       try {
                                         _habits[index].complete();
@@ -412,14 +408,14 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
                                         .collection('data/Habits')
                                         .doc(habit.gId)
                                         .set(m);
-                                  // Handle issues and revert changes on failure
+                                    // Handle issues and revert changes on failure
                                   } catch (e) {
                                     // revert UI state on failure
                                     if (!mounted) return;
                                     setState(() {
                                       _checked[index] = !newVal;
                                     });
-                                    // Update progress after reverting the change
+                                    // Update progress bar after reverting the change
                                     _updateProgressBar(
                                       _habits.length,
                                       _checked.where((v) => v).length,
@@ -469,7 +465,9 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
                                           context,
                                         ).showSnackBar(
                                           SnackBar(
-                                            content: Text('Edit ${_habits[index].name}'),
+                                            content: Text(
+                                              'Edit ${_habits[index].name}',
+                                            ),
                                           ),
                                         );
                                       },
@@ -502,7 +500,8 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
         height: 80,
         child: FloatingActionButton(
           onPressed: () {
-            // Open dialog to collect habit details
+            // Open dialog to get title and details for the habit.
+            // NEED TO GET MORE HABIT DETAILS SUCH AS START/END DATE, RECURRING, ETC.
             _showCreateHabitDialog();
           },
           shape: const CircleBorder(),
