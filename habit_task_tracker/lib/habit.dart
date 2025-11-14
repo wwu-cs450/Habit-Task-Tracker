@@ -37,11 +37,12 @@ class Habit {
     required DateTime startDate,
     required DateTime endDate,
     required bool isRecurring,
-    bool? doNotRetrieveFromCache,
+    /// If true, do not use the cached Habit instance for this id.
+    bool? skipCache,
     Frequency? frequency,
     String? description,
   }) {
-    if (_habitCache.containsKey(id) && doNotRetrieveFromCache != true) {
+    if (_habitCache.containsKey(id) && skipCache != true) {
       return _habitCache[id]!;
     }
     final habit = Habit._internal(
