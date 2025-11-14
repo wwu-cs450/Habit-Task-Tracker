@@ -134,8 +134,17 @@ class Habit {
   //
   // Intended to be used like this:
   //   final habit = Habit(...).withNotification();
-  Habit withNotification() {
-    final Duration offset = const Duration(hours: 1);
+  Habit withNotification({Duration offset = const Duration(hours: 1)}) {
+    // Ensure that startDate is in the future
+    // Might be smart to do this in the initializer
+    final DateTime notifDateTime;
+    if (startDate.subtract(offset).isBefore(DateTime.now())) {
+      notifDateTime = DateTime.now()
+          .add(offset)
+          .add(const Duration(seconds: 1));
+    } else {
+      notifDateTime = startDate;
+    }
     final notification = notifier.Notification(
       this,
       'Reminder for $name',
@@ -143,7 +152,7 @@ class Habit {
     );
     notifications.add(notification);
     // `Notification.showScheduled` handles recurrence automatically
-    notification.showScheduled(startDate, offset: offset);
+    notification.showScheduled(notifDateTime, offset: offset);
     return this;
   }
 
