@@ -1,8 +1,11 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:habit_task_tracker/log.dart';
+import '_setup_mocks.dart';
 
 // Test to verify saving and loading Log objects from the localstore database
 void main() {
+  setUpAll(setupMocks);
+
   group('Log Database Test', () {
     test('Save and Load Log', () async {
       // Create a test log
