@@ -11,7 +11,7 @@ Map<String, Frequency> frequencyMap = {
   'Frequency.none': Frequency.none,
 };
 
-Log logCreation(String id, String? description) {
+Log createLog(String id, String? description) {
   return Log(habitId: id, notes: description);
 }
 
@@ -35,7 +35,7 @@ class Habit {
     this.frequency,
     this.description,
   }) : _id = id,
-       log = logCreation(id, description);
+       log = createLog(id, description);
 
   String get gId => _id;
 
