@@ -75,23 +75,68 @@ class Notification {
       onDidReceiveNotificationResponse: onNotificationPressed,
     );
 
+    // Request runtime permissions for notifications.
+    // These perms are also listed in the app manifest files
+    final androidImpl = flutterLocalNotificationsPlugin
+        .resolvePlatformSpecificImplementation<
+          AndroidFlutterLocalNotificationsPlugin
+        >();
+    if (androidImpl != null) {
+      final enabled = await androidImpl.areNotificationsEnabled() ?? false;
+      if (!enabled) {
+        await androidImpl.requestNotificationsPermission();
+      }
+    }
+    await flutterLocalNotificationsPlugin
+        .resolvePlatformSpecificImplementation<
+          IOSFlutterLocalNotificationsPlugin
+        >()
+        ?.requestPermissions(alert: true, badge: true, sound: true);
+
     // Configure the local timezone.
     await _configureLocalTimeZone();
 
-    // Test notification
-    final testHabit = Habit(
-      id: 'test_habit',
-      name: 'Test Habit',
-      startDate: DateTime.now(),
-      endDate: DateTime.now().add(const Duration(days: 30)),
-      isRecurring: true,
+    // Sends two test notifications for smoke testing purposes.
+    // Run by adding `--dart-define=NOTIF_TEST=true` to `flutter run` command.
+    await _maybeRunSmokeTest();
+  }
+
+  static Future<void> _maybeRunSmokeTest() async {
+    const bool enabled = bool.fromEnvironment(
+      'NOTIF_TEST',
+      defaultValue: false,
     );
-    final notification = Notification(
-      testHabit,
-      'Time to work on your habit!',
-      'Keep up the good work with your habit: ${testHabit.gName}',
+    if (!kDebugMode || !enabled) {
+      return;
+    }
+
+    final now = DateTime.now();
+
+    // Any habitId works; unknown IDs will be assumed to have `Frequency.none`.
+    final n1 = Notification._internal(
+      'debug-smoke-1',
+      'Test Notification 1',
+      'In 10s',
     );
-    await notification.showImmediately();
+    await n1.showScheduled(
+      now.add(const Duration(seconds: 10)),
+      offset: Duration.zero,
+    );
+    final n2 = Notification._internal(
+      'debug-smoke-2',
+      'Test Notification 2',
+      'In 20s',
+    );
+    await n2.showScheduled(
+      now.add(const Duration(seconds: 20)),
+      offset: Duration.zero,
+    );
+    final n3 = Notification._internal(
+      'debug-smoke-3',
+      'Test Notification 3',
+      'Immediate',
+    );
+    await n3.showImmediately();
   }
 
   static Future<void> _configureLocalTimeZone() async {
