@@ -12,10 +12,7 @@ Map<String, Frequency> frequencyMap = {
 };
 
 Log logCreation(String id, String? description) {
-  return Log(
-    habitId: id,
-    notes: description,
-  );
+  return Log(habitId: id, notes: description);
 }
 
 class Habit {
@@ -37,7 +34,8 @@ class Habit {
     required this.isRecurring,
     this.frequency,
     this.description,
-  }) : _id = id, log = logCreation(id, description);
+  }) : _id = id,
+       log = logCreation(id, description);
 
   String get gId => _id;
 
