@@ -122,7 +122,12 @@ class Habit {
   }) {
     // Ensure that startDate is in the future
     // Might be smart to do this in the initializer
-    final DateTime notifDateTime = startDate.add(reminderLeadTime);
+    final DateTime notifDateTime = _earliestDate(
+      startDate.add(reminderLeadTime), // Task time - lead time
+      DateTime.now().add(
+        Duration(seconds: 1),
+      ), // At least 1 second in the future
+    );
     final notification = notifier.Notification(
       this,
       'Reminder for $name',
@@ -130,14 +135,14 @@ class Habit {
     );
     notifications.add(notification);
     // `Notification.showScheduled` handles recurrence automatically
-    notification
-        .showScheduled(notifDateTime, reminderLeadTime: reminderLeadTime)
-        .catchError((e, stack) {
-          logger.e(
-            'Failed to schedule notification for habit with ID $gId: $e',
-          );
-        });
+    notification.showScheduled(notifDateTime).catchError((e, stack) {
+      logger.e('Failed to schedule notification for habit with ID $gId: $e');
+    });
     return this;
+  }
+
+  DateTime _earliestDate(DateTime a, DateTime b) {
+    return a.isBefore(b) ? a : b;
   }
 
   void complete() {

@@ -118,19 +118,13 @@ class Notification {
       'Test Notification 1',
       'In 10s',
     );
-    await n1.showScheduled(
-      now.add(const Duration(seconds: 10)),
-      reminderLeadTime: Duration.zero,
-    );
+    await n1.showScheduled(now.add(const Duration(seconds: 10)));
     final n2 = Notification._internal(
       'debug-smoke-2',
       'Test Notification 2',
       'In 20s',
     );
-    await n2.showScheduled(
-      now.add(const Duration(seconds: 20)),
-      reminderLeadTime: Duration.zero,
-    );
+    await n2.showScheduled(now.add(const Duration(seconds: 20)));
     final n3 = Notification._internal(
       'debug-smoke-3',
       'Test Notification 3',
@@ -165,16 +159,13 @@ class Notification {
   }
 
   // Schedule notification at scheduledDate minus lead time
-  Future<void> showScheduled(
-    DateTime scheduledDate, {
-    Duration reminderLeadTime = const Duration(hours: 1),
-  }) async {
+  Future<void> showScheduled(DateTime scheduledDate) async {
     // TZ needs to be initialized **first**
     await _configureLocalTimeZone();
 
     // Convert scheduledDate to TZDateTime
     final tz.TZDateTime tzScheduledDate = tz.TZDateTime.from(
-      scheduledDate.subtract(reminderLeadTime),
+      scheduledDate,
       tz.local,
     );
 
