@@ -210,7 +210,7 @@ class Notification {
       tzScheduledDate, // Scheduled time.
       notificationDetails, // Platform-specific details.
       androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle, //
-      payload: habitId.toString(), // Send habit ID as payload
+      payload: habitId, // Send habit ID as payload
       matchDateTimeComponents: repeatInterval,
     );
   }
