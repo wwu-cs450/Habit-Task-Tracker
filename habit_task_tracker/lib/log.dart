@@ -1,3 +1,4 @@
+import 'dart:math';
 import 'package:habit_task_tracker/backend.dart';
 import 'package:habit_task_tracker/habit.dart';
 
@@ -78,7 +79,7 @@ class Log {
 
     if (totalOpportunities <= 0) return 0;
     
-    return ((timeStamps.length / totalOpportunities) * 100).round();
+    return min(((timeStamps.length / totalOpportunities) * 100).round(), 100);
   }
 }
 
