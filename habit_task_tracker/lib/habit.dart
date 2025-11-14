@@ -133,7 +133,9 @@ class Habit {
     notification
         .showScheduled(notifDateTime, reminderLeadTime: reminderLeadTime)
         .catchError((e, stack) {
-          logger.e('Failed to schedule notification: $e');
+          logger.e(
+            'Failed to schedule notification for habit with ID $gId: $e',
+          );
         });
     return this;
   }
