@@ -15,7 +15,7 @@ final filePath = Directory('/data/habits');
 bool exists = filePath.existsSync();
 final collectionHabits = exists? db.collection('data/habits') : null;
 
-List<Habit> searchHabits(DateTime? date1, DateTime? date2, String? name, String? description) {
+List<Habit> searchHabits({DateTime? date1, DateTime? date2, String? name, String? description}) {
   List<Habit> results = [];
   if (!exists) {
     print('No habits found in the database.');
