@@ -27,7 +27,7 @@ jobs:
 
       # Lint Dart code
       - name: Verify formatting
-        run: dart format --output=none --set-exit-if-changed .
+        run: dart format --output=show --set-exit-if-changed .
         # --set-exit-if-changed stops execution if the any code is not well formatted
         working-directory: habit_task_tracker
 
