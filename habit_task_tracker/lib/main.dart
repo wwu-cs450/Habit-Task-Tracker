@@ -33,7 +33,7 @@ class MyApp extends StatelessWidget {
 
   // Callback for notification pressed while app is running
   static void onNotificationPressed(NotificationResponse response) {
-    final String? payload = response.payload;
+    // final String? payload = response.payload;
     // In future, highlight specific habit based on payload
     // print('Notification tapped for habit with id: $payload');
   }
