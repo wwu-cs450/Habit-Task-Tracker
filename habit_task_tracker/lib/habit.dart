@@ -3,6 +3,7 @@ import 'package:habit_task_tracker/log.dart';
 import 'package:habit_task_tracker/notifier.dart' as notifier;
 import 'package:duration/duration.dart';
 import 'dart:async';
+import 'package:logger/logger.dart';
 
 enum Frequency { daily, weekly, monthly, yearly, none }
 
@@ -29,6 +30,7 @@ class Habit {
   Log log;
   List<notifier.Notification> notifications;
   static final Map<String, Habit> _habitCache = {};
+  static final logger = Logger();
   factory Habit({
     required String id,
     required String name,
@@ -132,7 +134,12 @@ class Habit {
     );
     notifications.add(notification);
     // `Notification.showScheduled` handles recurrence automatically
-    unawaited(notification.showScheduled(notifDateTime, offset: offset));
+    notification.showScheduled(notifDateTime, offset: offset).catchError((
+      e,
+      stack,
+    ) {
+      logger.e('Failed to schedule notification: $e');
+    });
     return this;
   }
 

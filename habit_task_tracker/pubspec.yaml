@@ -41,6 +41,7 @@ dependencies:
   duration: ^4.0.3
 
 dev_dependencies:
+  logger: ^2.6.2
   mockito: ^5.5.1
   plugin_platform_interface: ^2.1.8
   flutter_test:
