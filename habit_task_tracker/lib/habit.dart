@@ -1,5 +1,5 @@
 import 'package:habit_task_tracker/backend.dart';
-//import 'package:habit_task_tracker/log.dart';
+import 'package:habit_task_tracker/log.dart';
 
 enum Frequency { daily, weekly, monthly, yearly, none }
 
@@ -11,6 +11,10 @@ Map<String, Frequency> frequencyMap = {
   'Frequency.none': Frequency.none,
 };
 
+Log createLog(String id, String? description) {
+  return Log(habitId: id, notes: description);
+}
+
 class Habit {
   final String _id;
   dynamic _completed;
@@ -20,6 +24,7 @@ class Habit {
   DateTime endDate;
   bool isRecurring;
   Frequency? frequency;
+  Log log;
 
   Habit({
     required String id,
@@ -29,7 +34,8 @@ class Habit {
     required this.isRecurring,
     this.frequency,
     this.description,
-  }) : _id = id;
+  }) : _id = id,
+       log = createLog(id, description);
 
   String get gId => _id;
 

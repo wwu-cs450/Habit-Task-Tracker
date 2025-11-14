@@ -103,5 +103,19 @@ void main() {
 
       expect(loadedHabit, isNull);
     });
+    test('Correct creation of Log', () {
+      final habit = Habit(
+        id: 'habit_8',
+        name: 'Test Habit for Log',
+        startDate: DateTime(2024, 5, 5),
+        endDate: DateTime(2024, 12, 31),
+        isRecurring: true,
+        frequency: Frequency.daily,
+      );
+
+      expect(habit.log.gId, equals(habit.gId));
+      expect(habit.log.timeStamps, isEmpty);
+      expect(habit.log.notes, isNull);
+    });
   });
 }
