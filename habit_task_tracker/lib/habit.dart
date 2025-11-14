@@ -13,7 +13,6 @@ Map<String, Frequency> frequencyMap = {
   'Frequency.yearly': Frequency.yearly,
   'Frequency.none': Frequency.none,
 };
-
 Log createLog(String id, String? description) {
   return Log(habitId: id, notes: description);
 }
@@ -30,13 +29,13 @@ class Habit {
   Log log;
   List<notifier.Notification> notifications;
   static final Map<String, Habit> _habitCache = {};
-
   factory Habit({
     required String id,
     required String name,
     required DateTime startDate,
     required DateTime endDate,
     required bool isRecurring,
+
     /// If true, do not use the cached Habit instance for this id.
     bool? skipCache,
     Frequency? frequency,
@@ -55,11 +54,9 @@ class Habit {
       description: description,
       notifications: [],
     );
-
     _habitCache[id] = habit;
     return habit;
   }
-
   static Habit? fromId(String id) {
     return _habitCache[id];
   }
@@ -75,21 +72,13 @@ class Habit {
     required this.notifications,
   }) : _id = id,
        log = createLog(id, description);
-
   String get gId => _id;
-
   String get gName => name;
-
   DateTime get gStartDate => startDate;
-
   DateTime get gEndDate => endDate;
-
   bool get gIsRecurring => isRecurring;
-
   Frequency get gFrequency => frequency;
-
   dynamic get gCompleted => _completed;
-
   Map<String, dynamic> toJson() {
     return {
       'id': _id,
@@ -118,7 +107,6 @@ class Habit {
     // .withNotification()
     ;
   }
-
   // Schedule notification for a habit. Automatically
   // handles scheduling, recurrence, etc. This function
   // is not idempotent *yet*; that's a stretch goal.
