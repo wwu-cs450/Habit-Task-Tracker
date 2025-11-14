@@ -140,7 +140,7 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
       startDate: DateTime.now(),
       endDate: DateTime.now().add(const Duration(days: 1)),
       isRecurring: false,
-    );
+    ).withNotification();
 
     setState(() {
       _habits.insert(0, habit);
@@ -190,6 +190,9 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
 
       // Update progress after deletion
       _updateProgressBar(_habits.length, _checked.where((v) => v).length);
+
+      // Remove reminder notification for the habit
+      await notifier.Notification.cancel(habit);
 
       // Remove from the database (currently localstore)
       try {
