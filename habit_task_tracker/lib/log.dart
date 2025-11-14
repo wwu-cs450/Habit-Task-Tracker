@@ -69,6 +69,9 @@ class Log {
         totalOpportunities =
             (now.year - startDate.year) * 12 + (now.month - startDate.month) + 1;
         break;
+      case Frequency.yearly:
+        totalOpportunities = now.year - startDate.year + 1;
+        break;
       default:
         totalOpportunities = 1;
     }
