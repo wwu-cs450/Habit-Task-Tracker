@@ -29,10 +29,7 @@ void main() {
     test('Save and Load Log without notes', () async {
       // Create a test log without notes
       DateTime testTimestamp = DateTime(2025, 11, 5, 14, 45);
-      Log testLog = Log(
-        habitId: 'habit_456',
-        timeStamps: [testTimestamp],
-      );
+      Log testLog = Log(habitId: 'habit_456', timeStamps: [testTimestamp]);
 
       // Save the log to the database
       await saveLog(testLog);
@@ -55,16 +52,23 @@ void main() {
   group('Log Class Methods', () {
     test('getCompletionPercentage returns correct value', () {
       final now = DateTime.now();
-      final startDate = now.subtract(const Duration(days: 2)); // 3 days including today
-      Log log = Log(habitId: 'habit_789', timeStamps: [
-        startDate,
-        startDate.add(const Duration(days: 1)),
-        now,
-      ]);
+      final startDate = now.subtract(
+        const Duration(days: 2),
+      ); // 3 days including today
+      Log log = Log(
+        habitId: 'habit_789',
+        timeStamps: [startDate, startDate.add(const Duration(days: 1)), now],
+      );
       // 3 completions in 3 days, should be 100%
-      expect(log.getCompletionPercentage(Frequency.daily, startDate), equals(100));
+      expect(
+        log.getCompletionPercentage(Frequency.daily, startDate),
+        equals(100),
+      );
       // 3 completions in 1 week, should be 100%
-      expect(log.getCompletionPercentage(Frequency.weekly, startDate), equals(100));
+      expect(
+        log.getCompletionPercentage(Frequency.weekly, startDate),
+        equals(100),
+      );
     });
 
     test('updateTimeStamps adds timestamp and saves', () async {

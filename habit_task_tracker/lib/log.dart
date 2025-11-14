@@ -7,21 +7,15 @@ class Log {
   List<DateTime> timeStamps = [];
   String? notes;
 
-
-  Log({
-    required String habitId,
-    List<DateTime>? timeStamps,
-    this.notes,
-  })  : _habitId = habitId,
-        timeStamps = timeStamps ?? [];
-
+  Log({required String habitId, List<DateTime>? timeStamps, this.notes})
+    : _habitId = habitId,
+      timeStamps = timeStamps ?? [];
 
   String get gId => _habitId;
 
   List<DateTime> get gTimeStamps => timeStamps;
 
   String? get gNotes => notes;
-
 
   Map<String, dynamic> toJson() {
     return {
@@ -30,7 +24,6 @@ class Log {
       'notes': notes,
     };
   }
-
 
   factory Log.fromJson(Map<String, dynamic> json) {
     return Log(
@@ -42,7 +35,6 @@ class Log {
     );
   }
 
-
   Future<void> updateTimeStamps(DateTime newTimeStamps) async {
     timeStamps.add(newTimeStamps);
     await saveLog(this);
@@ -52,7 +44,6 @@ class Log {
     notes = newNotes;
     await saveLog(this);
   }
-
 
   int getCompletionPercentage(Frequency frequency, DateTime startDate) {
     final now = DateTime.now();
@@ -68,7 +59,9 @@ class Log {
         break;
       case Frequency.monthly:
         totalOpportunities =
-            (now.year - startDate.year) * 12 + (now.month - startDate.month) + 1;
+            (now.year - startDate.year) * 12 +
+            (now.month - startDate.month) +
+            1;
         break;
       case Frequency.yearly:
         totalOpportunities = now.year - startDate.year + 1;
@@ -86,7 +79,6 @@ class Log {
 Future<void> saveLog(Log log) async {
   await saveData('Logs', log.gId, log.toJson());
 }
-
 
 Future<Log> loadLog(String id) async {
   var data = await loadData('Logs', id);
