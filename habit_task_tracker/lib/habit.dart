@@ -134,10 +134,11 @@ class Habit {
     } else {
       notifDateTime = startDate;
     }
+    final actualDuration = notifDateTime.difference(DateTime.now());
     final notification = notifier.Notification(
       this,
       'Reminder for $name',
-      'Don\'t forget to complete your habit!\nIt\'s due in ${offset.pretty(abbreviated: false)}.',
+      'Don\'t forget to complete your habit!\nIt\'s due in ${actualDuration.pretty(abbreviated: false)}.',
     );
     notifications.add(notification);
     // `Notification.showScheduled` handles recurrence automatically
