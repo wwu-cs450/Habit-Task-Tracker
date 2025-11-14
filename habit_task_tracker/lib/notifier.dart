@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:habit_task_tracker/habit.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
@@ -32,12 +33,12 @@ class Notification {
   );
 
   // Notification fields
-  int habitId;
+  String habitId;
   String title;
   String body;
 
   factory Notification(Habit habit, String title, String body) {
-    return Notification._internal(habit.gId.hashCode, title, body);
+    return Notification._internal(habit.gId, title, body);
   }
 
   Notification._internal(this.habitId, this.title, this.body);
@@ -75,7 +76,7 @@ class Notification {
     );
 
     // Configure the local timezone.
-    _configureLocalTimeZone();
+    await _configureLocalTimeZone();
 
     // Test notification
     final testHabit = Habit(
@@ -99,25 +100,67 @@ class Notification {
     tz.setLocalLocation(tz.getLocation(timeZone.identifier));
   }
 
-  Future<void> showImmediately() async {
+  static Future<void> cancel(Habit habit) async {
+    await flutterLocalNotificationsPlugin.cancel(habit.gId.hashCode);
+  }
+
+  Future<void> showImmediately({String? title, String? body}) async {
+    final String notifTitle = title ?? this.title;
+    final String notifBody = body ?? this.body;
     flutterLocalNotificationsPlugin.show(
-      habitId, // Unique ID for the notification.
-      title, // Notification title.
-      body, // Notification body.
+      habitId.hashCode, // Unique ID for the notification.
+      notifTitle, // Notification title.
+      notifBody, // Notification body.
       notificationDetails, // Platform-specific details.
       payload: habitId.toString(), // Send habit ID as payload
     );
   }
 
-  Future<void> showScheduled(DateTime scheduledDate) async {
+  // Schedule notification at scheduledDate minus offset
+  Future<void> showScheduled(
+    DateTime scheduledDate, {
+    Duration offset = const Duration(hours: 1),
+  }) async {
+    // Convert scheduledDate to TZDateTime
+    final tz.TZDateTime tzScheduledDate = tz.TZDateTime.from(
+      scheduledDate.subtract(offset),
+      tz.local,
+    );
+
+    Frequency frequency;
+    // Look up habit to get frequency
+    final Habit? habit = Habit.fromId(habitId);
+    frequency = habit?.frequency ?? Frequency.none;
+
+    // Determine the repeat interval based on frequency
+    final DateTimeComponents? repeatInterval;
+    switch (frequency) {
+      case Frequency.daily:
+        repeatInterval = DateTimeComponents.time;
+        break;
+      case Frequency.weekly:
+        repeatInterval = DateTimeComponents.dayOfWeekAndTime;
+        break;
+      case Frequency.monthly:
+        repeatInterval = DateTimeComponents.dayOfMonthAndTime;
+        break;
+      case Frequency.yearly:
+        repeatInterval = DateTimeComponents.dateAndTime;
+        break;
+      case Frequency.none:
+        repeatInterval = null; // Only schedule once
+        break;
+    }
+
     await flutterLocalNotificationsPlugin.zonedSchedule(
-      habitId, // Unique ID for the notification.
+      habitId.hashCode, // Unique ID for the notification.
       title, // Notification title.
       body, // Notification body.
-      tz.TZDateTime.from(scheduledDate, tz.local), // Scheduled time.
+      tzScheduledDate, // Scheduled time.
       notificationDetails, // Platform-specific details.
       androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle, //
       payload: habitId.toString(), // Send habit ID as payload
+      matchDateTimeComponents: repeatInterval,
     );
   }
 }
