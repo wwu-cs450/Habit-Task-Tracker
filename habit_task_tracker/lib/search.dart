@@ -11,14 +11,14 @@ final db = Localstore.instance;
 final fuzzyVal = 70; // threshold for fuzzy search
 
 // check if //data/habits exists
-final filePath = Directory('/data/habits');
+final filePath = Directory('data/Habits');
 bool exists = filePath.existsSync();
-final collectionHabits = exists? db.collection('data/habits') : null;
+final collectionHabits = exists? db.collection('data/Habits') : null;
 
 List<Habit> searchHabits({DateTime? date1, DateTime? date2, String? name, String? description}) {
   List<Habit> results = [];
   if (!exists) {
-    print('No habits found in the database.');
+    print('No habits found in the database. in $filePath');
     return results;
   }
   if (date1 != null && date2 != null) {
