@@ -89,7 +89,7 @@ class _MyHomePageState extends State<MyHomePage> {
     });
   }
 
-  // MAIN BODY BUILD METHOD
+  // Main body build method
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -155,15 +155,16 @@ class _MyHomePageState extends State<MyHomePage> {
         ),
       ),
 
+      // Main Page
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
           children: [
+            // Progress Bar
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 8.0),
               child: Row(
                 children: [
-                  // Progress Bar
                   Expanded(
                     child: LinearProgressIndicator(
                       value: progress,
@@ -183,8 +184,10 @@ class _MyHomePageState extends State<MyHomePage> {
             Expanded(
               child: ListView.separated(
                 itemCount: _habits.length,
+                // Card spacing
                 separatorBuilder: (context, index) =>
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 10),
+                // Cards
                 itemBuilder: (context, index) {
                   return ClipRect(
                     child: AnimatedSize(
@@ -204,6 +207,7 @@ class _MyHomePageState extends State<MyHomePage> {
                                 value: _completedToday.contains(
                                   _habits[index].gId,
                                 ),
+                                // Modify habit completion status
                                 onChanged: (bool? value) async {
                                   final newVal = value ?? false;
                                   final habit = _habits[index];
@@ -236,6 +240,7 @@ class _MyHomePageState extends State<MyHomePage> {
                                         final existingLog = await loadLog(
                                           habit.gId,
                                         );
+                                        // Check if a log with today's timestamp exists
                                         final exists = existingLog.gTimeStamps
                                             .any(
                                               (dt) =>
@@ -243,6 +248,7 @@ class _MyHomePageState extends State<MyHomePage> {
                                                   dt.month == now.month &&
                                                   dt.day == now.day,
                                             );
+                                        // Only add timestamp if it doesn't already exist
                                         if (!exists) {
                                           existingLog.timeStamps.add(now);
                                           await saveLog(existingLog);
@@ -272,7 +278,9 @@ class _MyHomePageState extends State<MyHomePage> {
                                           await saveLog(existingLog);
                                         }
                                       } catch (_) {
-                                        // no log exists — nothing to remove
+                                        debugPrint(
+                                          "No log to remove timestamp from",
+                                        );
                                       }
                                     }
                                   } catch (e) {
