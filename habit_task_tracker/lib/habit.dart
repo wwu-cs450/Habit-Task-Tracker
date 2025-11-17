@@ -1,5 +1,6 @@
 import 'package:habit_task_tracker/backend.dart';
 import 'package:habit_task_tracker/log.dart';
+import 'package:table_calendar/table_calendar.dart'; 
 
 enum Frequency { daily, weekly, monthly, yearly, none }
 
@@ -25,6 +26,7 @@ class Habit {
   bool isRecurring;
   Frequency? frequency;
   Log log;
+  List<DateTime> completedDates;
 
   Habit({
     required String id,
@@ -34,8 +36,10 @@ class Habit {
     required this.isRecurring,
     this.frequency,
     this.description,
+     List<DateTime>? completedDates, // optional in constructor
   }) : _id = id,
-       log = createLog(id, description);
+       log = createLog(id, description),
+       completedDates = completedDates ?? [];
 
   String get gId => _id;
 
@@ -60,6 +64,7 @@ class Habit {
       'endDate': endDate.toIso8601String(),
       'isRecurring': isRecurring,
       'frequency': gFrequency.toString(),
+      'completedDates': completedDates.map((d) => d.toIso8601String()).toList(),
     };
   }
 
@@ -72,13 +77,23 @@ class Habit {
       endDate: DateTime.parse(json['endDate']),
       isRecurring: json['isRecurring'],
       frequency: frequencyMap[json['frequency']] ?? Frequency.none,
+      completedDates: (json['completedDates'] as List<dynamic>?)
+      ?.map((e) => DateTime.parse(e))
+      .toList(),
     );
   }
 
-  void complete() {
+  void complete([DateTime? day]) {
+  final d = day ?? DateTime.now();
+  if (!completedDates.any((x) => isSameDay(x, d))) {
+    completedDates.add(d);
+    }
+  }
+
+  // void complete() {
     //updateTimeStamps(DateTime.now());
   }
-}
+// }
 
 Future<void> saveHabit(Habit habit) async {
   await saveData('Habits', habit.gId, habit.toJson());

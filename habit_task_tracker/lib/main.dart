@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'habit.dart';
 import 'backend.dart';
+import 'calendar.dart';
 
 // I got some help from GitHub CoPilot with this code. I also got some ideas from
 // this youtube video: https://www.youtube.com/watch?v=K4P5DZ9TRns
@@ -317,12 +318,17 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
                   Navigator.pop(context);
                 },
               ),
-              // NEEDS TO BE UPDATED TO LINK TO CALENDAR PAGE
+
               ListTile(
                 leading: const Icon(Icons.calendar_today),
                 title: const Text('Calendar'),
                 onTap: () {
-                  debugPrint('Calendar tapped');
+                      debugPrint('Calendar tapped');
+                      Navigator.pop(context);
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => CalendarPage(habits: _habits)),
+                  );
                 },
               ),
             ],
@@ -384,6 +390,7 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
                                     // Optionally update habit internal state
                                     if (newVal) {
                                       try {
+                                        _checked[index] = true;
                                         _habits[index].complete();
                                       } catch (_) {}
                                     }
