@@ -66,15 +66,24 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
       final List<Habit> list = <Habit>[];
       final List<bool> loadedCompleted = <bool>[];
       if (all != null) {
-        all.forEach((key, value) {
+        for (final entry in all.entries) {
+          final String id = entry.key;
+          final Map<String, dynamic> rawMap = Map<String, dynamic>.from(entry.value);
           try {
-            final Map<String, dynamic> map = Map<String, dynamic>.from(value);
-            list.add(Habit.fromJson(map));
-            loadedCompleted.add(map['completed'] == true);
+            final Habit habit = await loadHabit(id);
+            list.add(habit);
+            loadedCompleted.add(rawMap['completed'] == true);
           } catch (e) {
-            debugPrint('Failed to parse habit $key: $e');
+            // fallback to direct parsing so we don't drop documents
+            try {
+              final Habit habit = Habit.fromJson(rawMap);
+              list.add(habit);
+              loadedCompleted.add(rawMap['completed'] == true);
+            } catch (err) {
+              debugPrint('Failed to load/parse habit $id: $e / $err');
+            }
           }
-        });
+        }
       }
 
       // Match habits with their completed status, then sort them so newest is first
@@ -148,7 +157,7 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
 
   // THIS SHOULD PROBABLY BE HANDLED IN THE HABIT CLASS AND USED HERE
   // Delete habit method
-  Future<void> deleteHabit(int index) async {
+  Future<void> _deleteHabitAtIndex(int index) async {
     if (index < 0 || index >= _checked.length) return;
     final confirmed = await showDialog<bool>(
       context: context,
@@ -180,7 +189,8 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
 
       // Remove from the database (currently localstore)
       try {
-        await db.collection('data/Habits').doc(habit.gId).delete();
+        // Use the helper in habit.dart to delete the habit data
+        await deleteHabit(habit.gId);
       } catch (e) {
         debugPrint('Failed to delete habit ${habit.gId}: $e');
       }
@@ -477,7 +487,7 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
                                       icon: const Icon(Icons.delete),
                                       tooltip: 'Delete',
                                       onPressed: () {
-                                        deleteHabit(index);
+                                        _deleteHabitAtIndex(index);
                                       },
                                     ),
                                   ],
