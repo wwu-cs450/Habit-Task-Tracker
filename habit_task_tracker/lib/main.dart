@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
+// import 'package:flutter/services.dart';
 import 'habit.dart';
 import 'backend.dart';
 import 'log.dart';
+import 'main_helpers.dart';
 
 // I got some help from GitHub CoPilot with this code. I also got some ideas from
 // this youtube video: https://www.youtube.com/watch?v=K4P5DZ9TRns
@@ -55,95 +56,28 @@ class _MyHomePageState extends State<MyHomePage> {
   @override
   void initState() {
     super.initState();
-    _loadHabits();
-  }
-
-  // Load habits from the database (currently localstore)
-  Future<void> _loadHabits() async {
-    try {
-      final Map<String, dynamic>? all = await db
-          .collection('data/Habits')
-          .get();
-      final List<Habit> list = <Habit>[];
-      final List<bool> loadedCompleted = <bool>[];
-      if (all != null) {
-        for (final entry in all.entries) {
-          final String id = entry.key;
-          final Map<String, dynamic> rawMap = Map<String, dynamic>.from(
-            entry.value,
-          );
-          try {
-            final Habit habit = await loadHabit(id);
-            list.add(habit);
-            // determine completed-for-today via logs
-            bool completedToday = false;
-            try {
-              final l = await loadLog(habit.gId);
-              final now = DateTime.now();
-              completedToday = l.gTimeStamps.any(
-                (dt) =>
-                    dt.year == now.year &&
-                    dt.month == now.month &&
-                    dt.day == now.day,
-              );
-            } catch (_) {
-              completedToday = false;
+    // Load habits via helper and apply to UI state
+    loadHabitsFromDb()
+        .then((result) {
+          if (!mounted) return;
+          final List<Habit> habits = (result['habits'] as List<dynamic>)
+              .cast<Habit>();
+          final Set<String> completed = (result['completedIds'] as Set<dynamic>)
+              .cast<String>();
+          setState(() {
+            _habits = habits;
+            _completedToday.clear();
+            _completedToday.addAll(completed);
+            _expanded.clear();
+            for (var _ in _habits) {
+              _expanded.add(false);
             }
-            loadedCompleted.add(completedToday);
-          } catch (e) {
-            // fallback to direct parsing so we don't drop documents
-            try {
-              final Habit habit = Habit.fromJson(rawMap);
-              list.add(habit);
-              bool completedToday = false;
-              try {
-                final l = await loadLog(habit.gId);
-                final now = DateTime.now();
-                completedToday = l.gTimeStamps.any(
-                  (dt) =>
-                      dt.year == now.year &&
-                      dt.month == now.month &&
-                      dt.day == now.day,
-                );
-              } catch (_) {
-                completedToday = false;
-              }
-              loadedCompleted.add(completedToday);
-            } catch (err) {
-              debugPrint('Failed to load/parse habit $id: $e / $err');
-            }
-          }
-        }
-      }
-
-      // Match habits with their completed status, then sort them so newest is first
-      final List<MapEntry<Habit, bool>> paired = <MapEntry<Habit, bool>>[];
-      for (var i = 0; i < list.length; i++) {
-        paired.add(
-          MapEntry(
-            list[i],
-            i < loadedCompleted.length ? loadedCompleted[i] : false,
-          ),
-        );
-      }
-      paired.sort((a, b) => b.key.startDate.compareTo(a.key.startDate));
-
-      setState(() {
-        _habits = paired.map((e) => e.key).toList();
-        _completedToday.clear();
-        for (var e in paired) {
-          if (e.value) _completedToday.add(e.key.gId);
-        }
-        _expanded.clear();
-        for (var _ in _habits) {
-          _expanded.add(false);
-        }
-      });
-      // Update progress after loading
-      _updateProgressBar(_habits.length, _completedToday.length);
-    } catch (e) {
-      debugPrint('Error loading habits: $e');
-    }
+          });
+          _updateProgressBar(_habits.length, _completedToday.length);
+        })
+        .catchError((e) {
+          debugPrint('Error loading habits: $e');
+        });
   }
 
   // Method for updating the Progress Bar
@@ -153,153 +87,6 @@ class _MyHomePageState extends State<MyHomePage> {
     setState(() {
       progress = p;
     });
-  }
-
-  // THIS SHOULD PROBABLY BE HANDLED IN THE HABIT CLASS AND USED HERE
-  // Create habit method
-  Future<void> createHabit(String title, String description) async {
-    final id = DateTime.now().millisecondsSinceEpoch.toString();
-    final habit = Habit(
-      id: id,
-      name: title,
-      description: description,
-      startDate: DateTime.now(),
-      endDate: DateTime.now().add(const Duration(days: 1)),
-      isRecurring: false,
-    );
-
-    setState(() {
-      _habits.insert(0, habit);
-      _expanded.insert(0, false);
-    });
-    // Update progress after adding
-    _updateProgressBar(_habits.length, _completedToday.length);
-
-    try {
-      final Map<String, dynamic> m = habit.toJson();
-      await db.collection('data/Habits').doc(id).set(m);
-    } catch (e) {
-      debugPrint('Failed to save habit: $e');
-    }
-  }
-
-  // THIS SHOULD PROBABLY BE HANDLED IN THE HABIT CLASS AND USED HERE
-  // Delete habit method
-  Future<void> _deleteHabitAtIndex(int index) async {
-    if (index < 0 || index >= _habits.length) return;
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Delete item?'),
-        content: const Text('Are you sure you want to delete this item?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('Delete'),
-          ),
-        ],
-      ),
-    );
-    if (confirmed == true) {
-      final habit = _habits[index];
-      setState(() {
-        _habits.removeAt(index);
-        _expanded.removeAt(index);
-        _completedToday.remove(habit.gId);
-      });
-
-      // Update progress after deletion
-      _updateProgressBar(_habits.length, _completedToday.length);
-
-      // Remove from the database (currently localstore)
-      try {
-        // Use the helper in habit.dart to delete the habit data
-        await deleteHabit(habit.gId);
-      } catch (e) {
-        debugPrint('Failed to delete habit ${habit.gId}: $e');
-      }
-    }
-  }
-
-  // Show dialog to create a new habit with title and description fields
-  Future<void> _showCreateHabitDialog() async {
-    final titleController = TextEditingController();
-    final descController = TextEditingController();
-
-    final saved = await showDialog<bool>(
-      context: context,
-      barrierDismissible: true,
-      useRootNavigator: true,
-      builder: (context) => AlertDialog(
-        title: const Text('New Habit'),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: titleController,
-                decoration: const InputDecoration(labelText: 'Title'),
-                autofocus: false,
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: descController,
-                decoration: const InputDecoration(labelText: 'Description'),
-                keyboardType: TextInputType.multiline,
-                minLines: 1,
-                maxLines: 3,
-                textAlignVertical: TextAlignVertical.top,
-              ),
-            ],
-          ),
-        ),
-        actions: [
-          // Cancel button
-          TextButton(
-            onPressed: () async {
-              // Unfocus and hide keyboard before closing dialog
-              final navigator = Navigator.of(context, rootNavigator: true);
-              FocusManager.instance.primaryFocus?.unfocus();
-              try {
-                await SystemChannels.textInput.invokeMethod('TextInput.hide');
-              } catch (_) {}
-              await Future.delayed(const Duration(milliseconds: 150));
-              navigator.pop(false);
-            },
-            child: const Text('Cancel'),
-          ),
-          // Save button
-          TextButton(
-            onPressed: () async {
-              // Unfocus and hide keyboard before closing dialog
-              final navigator = Navigator.of(context, rootNavigator: true);
-              FocusManager.instance.primaryFocus?.unfocus();
-              try {
-                await SystemChannels.textInput.invokeMethod('TextInput.hide');
-              } catch (_) {}
-              await Future.delayed(const Duration(milliseconds: 150));
-              navigator.pop(true);
-            },
-            child: const Text('Save'),
-          ),
-        ],
-      ),
-    );
-
-    if (saved == true) {
-      final title = titleController.text.isEmpty
-          ? 'New Habit'
-          : titleController.text.trim();
-      final desc = descController.text.trim();
-      createHabit(title, desc.isEmpty ? 'Description' : desc);
-    }
-
-    titleController.dispose();
-    descController.dispose();
   }
 
   // MAIN BODY BUILD METHOD
@@ -559,8 +346,29 @@ class _MyHomePageState extends State<MyHomePage> {
                                     IconButton(
                                       icon: const Icon(Icons.delete),
                                       tooltip: 'Delete',
-                                      onPressed: () {
-                                        _deleteHabitAtIndex(index);
+                                      onPressed: () async {
+                                        final habit = _habits[index];
+                                        await deleteHabitWithConfirmation(
+                                          context,
+                                          habit,
+                                          (id) async {
+                                            if (!mounted) return;
+                                            setState(() {
+                                              final idx = _habits.indexWhere(
+                                                (h) => h.gId == id,
+                                              );
+                                              if (idx != -1) {
+                                                _habits.removeAt(idx);
+                                                _expanded.removeAt(idx);
+                                                _completedToday.remove(id);
+                                              }
+                                            });
+                                            _updateProgressBar(
+                                              _habits.length,
+                                              _completedToday.length,
+                                            );
+                                          },
+                                        );
                                       },
                                     ),
                                   ],
@@ -582,10 +390,15 @@ class _MyHomePageState extends State<MyHomePage> {
         width: 80,
         height: 80,
         child: FloatingActionButton(
-          onPressed: () {
-            // Open dialog to get title and details for the habit.
-            // NEED TO GET MORE HABIT DETAILS SUCH AS START/END DATE, RECURRING, ETC.
-            _showCreateHabitDialog();
+          onPressed: () async {
+            await showCreateHabitDialog(context, (habit) async {
+              if (!mounted) return;
+              setState(() {
+                _habits.insert(0, habit);
+                _expanded.insert(0, false);
+              });
+              _updateProgressBar(_habits.length, _completedToday.length);
+            });
           },
           shape: const CircleBorder(),
           child: const Icon(Icons.add, size: 45),
