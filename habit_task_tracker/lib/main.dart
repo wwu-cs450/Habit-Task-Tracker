@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'habit.dart';
 import 'backend.dart';
+import 'log.dart';
 
 // I got some help from GitHub CoPilot with this code. I also got some ideas from
 // this youtube video: https://www.youtube.com/watch?v=K4P5DZ9TRns
@@ -45,7 +46,8 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
   // Create lists to store habits and their UI state
   // THIS WILL BE HANDLED IN THE HABIT CLASS BY STORING LOGS
   List<Habit> _habits = <Habit>[];
-  final List<bool> _checked = <bool>[];
+  // Track which habit IDs have a log timestamp for today.
+  final Set<String> _completedToday = <String>{};
   final List<bool> _expanded = <bool>[];
 
   double progress = 0.0;
@@ -68,17 +70,38 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
       if (all != null) {
         for (final entry in all.entries) {
           final String id = entry.key;
-          final Map<String, dynamic> rawMap = Map<String, dynamic>.from(entry.value);
+          final Map<String, dynamic> rawMap = Map<String, dynamic>.from(
+            entry.value,
+          );
           try {
             final Habit habit = await loadHabit(id);
             list.add(habit);
-            loadedCompleted.add(rawMap['completed'] == true);
+            // determine completed-for-today via logs
+            bool completedToday = false;
+            try {
+              final l = await loadLog(habit.gId);
+              final now = DateTime.now();
+              completedToday = l.gTimeStamps.any((dt) =>
+                  dt.year == now.year && dt.month == now.month && dt.day == now.day);
+            } catch (_) {
+              completedToday = false;
+            }
+            loadedCompleted.add(completedToday);
           } catch (e) {
             // fallback to direct parsing so we don't drop documents
             try {
               final Habit habit = Habit.fromJson(rawMap);
               list.add(habit);
-              loadedCompleted.add(rawMap['completed'] == true);
+              bool completedToday = false;
+              try {
+                final l = await loadLog(habit.gId);
+                final now = DateTime.now();
+                completedToday = l.gTimeStamps.any((dt) =>
+                    dt.year == now.year && dt.month == now.month && dt.day == now.day);
+              } catch (_) {
+                completedToday = false;
+              }
+              loadedCompleted.add(completedToday);
             } catch (err) {
               debugPrint('Failed to load/parse habit $id: $e / $err');
             }
@@ -100,9 +123,9 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
 
       setState(() {
         _habits = paired.map((e) => e.key).toList();
-        _checked.clear();
+        _completedToday.clear();
         for (var e in paired) {
-          _checked.add(e.value);
+          if (e.value) _completedToday.add(e.key.gId);
         }
         _expanded.clear();
         for (var _ in _habits) {
@@ -110,7 +133,7 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
         }
       });
       // Update progress after loading
-      _updateProgressBar(_habits.length, _checked.where((v) => v).length);
+      _updateProgressBar(_habits.length, _completedToday.length);
     } catch (e) {
       debugPrint('Error loading habits: $e');
     }
@@ -140,15 +163,13 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
 
     setState(() {
       _habits.insert(0, habit);
-      _checked.insert(0, false);
       _expanded.insert(0, false);
     });
     // Update progress after adding
-    _updateProgressBar(_habits.length, _checked.where((v) => v).length);
+    _updateProgressBar(_habits.length, _completedToday.length);
 
     try {
       final Map<String, dynamic> m = habit.toJson();
-      m['completed'] = false;
       await db.collection('data/Habits').doc(id).set(m);
     } catch (e) {
       debugPrint('Failed to save habit: $e');
@@ -158,7 +179,7 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
   // THIS SHOULD PROBABLY BE HANDLED IN THE HABIT CLASS AND USED HERE
   // Delete habit method
   Future<void> _deleteHabitAtIndex(int index) async {
-    if (index < 0 || index >= _checked.length) return;
+    if (index < 0 || index >= _habits.length) return;
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -180,12 +201,12 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
       final habit = _habits[index];
       setState(() {
         _habits.removeAt(index);
-        _checked.removeAt(index);
         _expanded.removeAt(index);
+        _completedToday.remove(habit.gId);
       });
 
       // Update progress after deletion
-      _updateProgressBar(_habits.length, _checked.where((v) => v).length);
+      _updateProgressBar(_habits.length, _completedToday.length);
 
       // Remove from the database (currently localstore)
       try {
@@ -386,49 +407,80 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
                             ListTile(
                               // Checkbox to mark habit as done/not done
                               leading: Checkbox(
-                                value: _checked[index],
+                                value: _completedToday.contains(_habits[index].gId),
                                 onChanged: (bool? value) async {
                                   final newVal = value ?? false;
+                                  final habit = _habits[index];
                                   setState(() {
-                                    _checked[index] = newVal;
-                                    // Optionally update habit internal state
                                     if (newVal) {
+                                      _completedToday.add(habit.gId);
                                       try {
-                                        _habits[index].complete();
+                                        habit.complete();
                                       } catch (_) {}
+                                    } else {
+                                      _completedToday.remove(habit.gId);
                                     }
                                   });
 
                                   // Update the progress bar after changes
                                   _updateProgressBar(
                                     _habits.length,
-                                    _checked.where((v) => v).length,
+                                    _completedToday.length,
                                   );
 
                                   // Save the habit status
-                                  final habit = _habits[index];
                                   final messenger = ScaffoldMessenger.of(
                                     context,
                                   );
                                   try {
-                                    final Map<String, dynamic> m = habit
-                                        .toJson();
-                                    m['completed'] = newVal;
-                                    await db
-                                        .collection('data/Habits')
-                                        .doc(habit.gId)
-                                        .set(m);
-                                    // Handle issues and revert changes on failure
+                                    // Update logs for today's completion
+                                    final now = DateTime.now();
+                                    if (newVal) {
+                                      try {
+                                        final existingLog = await loadLog(habit.gId);
+                                        final exists = existingLog.gTimeStamps.any((dt) =>
+                                            dt.year == now.year &&
+                                            dt.month == now.month &&
+                                            dt.day == now.day);
+                                        if (!exists) {
+                                          existingLog.timeStamps.add(now);
+                                          await saveLog(existingLog);
+                                        }
+                                      } catch (_) {
+                                        // no existing log, create one and add timestamp
+                                        final l = createLog(habit.gId, habit.description);
+                                        await l.updateTimeStamps(now);
+                                      }
+                                    } else {
+                                      try {
+                                        final existingLog = await loadLog(habit.gId);
+                                        existingLog.timeStamps.removeWhere((dt) =>
+                                            dt.year == now.year &&
+                                            dt.month == now.month &&
+                                            dt.day == now.day);
+                                        if (existingLog.timeStamps.isEmpty) {
+                                          await deleteData('Logs', habit.gId);
+                                        } else {
+                                          await saveLog(existingLog);
+                                        }
+                                      } catch (_) {
+                                        // no log exists — nothing to remove
+                                      }
+                                    }
                                   } catch (e) {
                                     // revert UI state on failure
                                     if (!mounted) return;
                                     setState(() {
-                                      _checked[index] = !newVal;
+                                      if (newVal) {
+                                        _completedToday.remove(habit.gId);
+                                      } else {
+                                        _completedToday.add(habit.gId);
+                                      }
                                     });
                                     // Update progress bar after reverting the change
                                     _updateProgressBar(
                                       _habits.length,
-                                      _checked.where((v) => v).length,
+                                      _completedToday.length,
                                     );
                                     messenger.showSnackBar(
                                       const SnackBar(
