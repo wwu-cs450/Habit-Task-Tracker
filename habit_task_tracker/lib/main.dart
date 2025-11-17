@@ -42,9 +42,8 @@ class MyHomePage extends StatefulWidget {
 }
 
 // Main state class for the home page
-class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
-  // Create lists to store habits and their UI state
-  // THIS WILL BE HANDLED IN THE HABIT CLASS BY STORING LOGS
+class _MyHomePageState extends State<MyHomePage> {
+  // Create list to store habits
   List<Habit> _habits = <Habit>[];
   // Track which habit IDs have a log timestamp for today.
   final Set<String> _completedToday = <String>{};
@@ -81,8 +80,12 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
             try {
               final l = await loadLog(habit.gId);
               final now = DateTime.now();
-              completedToday = l.gTimeStamps.any((dt) =>
-                  dt.year == now.year && dt.month == now.month && dt.day == now.day);
+              completedToday = l.gTimeStamps.any(
+                (dt) =>
+                    dt.year == now.year &&
+                    dt.month == now.month &&
+                    dt.day == now.day,
+              );
             } catch (_) {
               completedToday = false;
             }
@@ -96,8 +99,12 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
               try {
                 final l = await loadLog(habit.gId);
                 final now = DateTime.now();
-                completedToday = l.gTimeStamps.any((dt) =>
-                    dt.year == now.year && dt.month == now.month && dt.day == now.day);
+                completedToday = l.gTimeStamps.any(
+                  (dt) =>
+                      dt.year == now.year &&
+                      dt.month == now.month &&
+                      dt.day == now.day,
+                );
               } catch (_) {
                 completedToday = false;
               }
@@ -407,7 +414,9 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
                             ListTile(
                               // Checkbox to mark habit as done/not done
                               leading: Checkbox(
-                                value: _completedToday.contains(_habits[index].gId),
+                                value: _completedToday.contains(
+                                  _habits[index].gId,
+                                ),
                                 onChanged: (bool? value) async {
                                   final newVal = value ?? false;
                                   final habit = _habits[index];
@@ -437,27 +446,39 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
                                     final now = DateTime.now();
                                     if (newVal) {
                                       try {
-                                        final existingLog = await loadLog(habit.gId);
-                                        final exists = existingLog.gTimeStamps.any((dt) =>
-                                            dt.year == now.year &&
-                                            dt.month == now.month &&
-                                            dt.day == now.day);
+                                        final existingLog = await loadLog(
+                                          habit.gId,
+                                        );
+                                        final exists = existingLog.gTimeStamps
+                                            .any(
+                                              (dt) =>
+                                                  dt.year == now.year &&
+                                                  dt.month == now.month &&
+                                                  dt.day == now.day,
+                                            );
                                         if (!exists) {
                                           existingLog.timeStamps.add(now);
                                           await saveLog(existingLog);
                                         }
                                       } catch (_) {
                                         // no existing log, create one and add timestamp
-                                        final l = createLog(habit.gId, habit.description);
+                                        final l = createLog(
+                                          habit.gId,
+                                          habit.description,
+                                        );
                                         await l.updateTimeStamps(now);
                                       }
                                     } else {
                                       try {
-                                        final existingLog = await loadLog(habit.gId);
-                                        existingLog.timeStamps.removeWhere((dt) =>
-                                            dt.year == now.year &&
-                                            dt.month == now.month &&
-                                            dt.day == now.day);
+                                        final existingLog = await loadLog(
+                                          habit.gId,
+                                        );
+                                        existingLog.timeStamps.removeWhere(
+                                          (dt) =>
+                                              dt.year == now.year &&
+                                              dt.month == now.month &&
+                                              dt.day == now.day,
+                                        );
                                         if (existingLog.timeStamps.isEmpty) {
                                           await deleteData('Logs', habit.gId);
                                         } else {
