@@ -333,16 +333,28 @@ Future<void> showCreateHabitDialog(
     try {
       // Ensure that end date is on or after start date
       if (selectedStartDate != null &&
-          selectedEndDate != null &&
-          selectedEndDate!.isBefore(selectedStartDate!)) {
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('End date must be the same or after start date'),
-            ),
-          );
+          selectedEndDate != null) {
+        // Normalize dates to remove time components
+        final startDateOnly = DateTime(
+          selectedStartDate!.year,
+          selectedStartDate!.month,
+          selectedStartDate!.day,
+        );
+        final endDateOnly = DateTime(
+          selectedEndDate!.year,
+          selectedEndDate!.month,
+          selectedEndDate!.day,
+        );
+        if (endDateOnly.isBefore(startDateOnly)) {
+          if (context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('End date must be the same or after start date'),
+              ),
+            );
+          }
+          return;
         }
-        return;
       }
 
       final habit = await createAndPersistHabit(
