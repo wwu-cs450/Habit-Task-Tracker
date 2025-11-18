@@ -17,6 +17,7 @@ Future<Map<String, dynamic>> loadHabitsFromDb() async {
       final Map<String, dynamic> rawMap = Map<String, dynamic>.from(
         entry.value,
       );
+      // Determine if habit was completed today
       try {
         final Habit habit = await loadHabit(id);
         list.add(habit);
@@ -35,6 +36,7 @@ Future<Map<String, dynamic>> loadHabitsFromDb() async {
         }
         loadedCompleted.add(completedToday);
       } catch (e) {
+        // Load from JSON if load habit method failed
         try {
           final Habit habit = Habit.fromJson(rawMap);
           list.add(habit);
@@ -91,6 +93,7 @@ Future<void> deleteHabitWithConfirmation(
     builder: (context) => AlertDialog(
       title: const Text('Delete item?'),
       content: const Text('Are you sure you want to delete this item?'),
+      // Remove dialog from the display with a boolean result
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context, false),
@@ -113,14 +116,15 @@ Future<void> deleteHabitWithConfirmation(
     return;
   }
 
+  // Try to delete the habit from the database
   try {
-    // Delete the habit
     await deleteHabit(habit.gId);
   } catch (e) {
     debugPrint('Failed to delete habit ${habit.gId}: $e');
   }
 }
 
+// THIS COULD LIKELY BE MOVED TO HABIT.DART
 /// Create a Habit and save it
 Future<Habit> createAndPersistHabit(
   String title,
@@ -221,7 +225,7 @@ Future<void> showCreateHabitDialog(
                     ],
                   ),
                   const SizedBox(height: 12),
-                  // Frequency selector (only when recurring)
+                  // Frequency selector visible only if recurring
                   if (selectedRecurring)
                     Row(
                       children: [
@@ -231,13 +235,21 @@ Future<void> showCreateHabitDialog(
                           value: selectedFrequency,
                           items: const [
                             DropdownMenuItem(
-                                value: Frequency.daily, child: Text('Daily')),
+                              value: Frequency.daily,
+                              child: Text('Daily'),
+                            ),
                             DropdownMenuItem(
-                                value: Frequency.weekly, child: Text('Weekly')),
+                              value: Frequency.weekly,
+                              child: Text('Weekly'),
+                            ),
                             DropdownMenuItem(
-                                value: Frequency.monthly, child: Text('Monthly')),
+                              value: Frequency.monthly,
+                              child: Text('Monthly'),
+                            ),
                             DropdownMenuItem(
-                                value: Frequency.yearly, child: Text('Yearly')),
+                              value: Frequency.yearly,
+                              child: Text('Yearly'),
+                            ),
                           ],
                           onChanged: (f) {
                             if (f == null) return;
@@ -396,5 +408,53 @@ String frequencyToString(Frequency f) {
       return 'Yearly';
     case Frequency.none:
       return 'None';
+  }
+}
+
+/// Check if two DateTime objects represent the same day
+bool isSameDay(DateTime a, DateTime b) {
+  final la = a.toLocal();
+  final lb = b.toLocal();
+  return la.year == lb.year && la.month == lb.month && la.day == lb.day;
+}
+
+/// Persist completion state for a habit for "today".
+Future<bool> setCompletion(
+  String habitId,
+  bool completed,
+  String? description,
+) async {
+  final now = DateTime.now();
+  try {
+    if (completed) {
+      try {
+        final existingLog = await loadLog(habitId);
+        final exists = existingLog.gTimeStamps.any((dt) => isSameDay(dt, now));
+        if (!exists) {
+          existingLog.timeStamps.add(now);
+          await saveLog(existingLog);
+        }
+      } catch (_) {
+        // No existing log so create one and add timestamp
+        final l = createLog(habitId, description);
+        await l.updateTimeStamps(now);
+      }
+    } else {
+      try {
+        final existingLog = await loadLog(habitId);
+        existingLog.timeStamps.removeWhere((dt) => isSameDay(dt, now));
+        if (existingLog.timeStamps.isEmpty) {
+          await deleteData('Logs', habitId);
+        } else {
+          await saveLog(existingLog);
+        }
+      } catch (_) {
+        // nothing to remove — treat as success
+      }
+    }
+    return true;
+  } catch (e) {
+    debugPrint('Failed to persist completion for $habitId: $e');
+    return false;
   }
 }

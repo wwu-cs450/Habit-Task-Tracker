@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 // import 'package:flutter/services.dart';
 import 'habit.dart';
-import 'backend.dart';
-import 'log.dart';
 import 'main_helpers.dart';
 
 // I got some help from GitHub CoPilot with this code. I also got some ideas from
@@ -19,7 +17,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Flutter Demo',
+      title: 'Habit Task Tracker',
       theme: ThemeData(
         // Need to decide what color scheme to use
         colorScheme: ColorScheme.fromSeed(
@@ -48,6 +46,7 @@ class _MyHomePageState extends State<MyHomePage> {
   List<Habit> _habits = <Habit>[];
   // Track which habit IDs have a log timestamp for today.
   final Set<String> _completedToday = <String>{};
+  // Track which habit cards are expanded in the UI
   final List<bool> _expanded = <bool>[];
 
   double progress = 0.0;
@@ -56,7 +55,7 @@ class _MyHomePageState extends State<MyHomePage> {
   @override
   void initState() {
     super.initState();
-    // Load habits via helper and apply to UI state
+    // Load habits from the database and save it to the UI state
     loadHabitsFromDb()
         .then((result) {
           if (!mounted) return;
@@ -89,7 +88,7 @@ class _MyHomePageState extends State<MyHomePage> {
     });
   }
 
-  // Simple date-only formatter (YYYY-MM-DD) without adding intl dependency
+  // Format DateTime to Date string
   String _format(DateTime d) => d.toIso8601String().split('T').first;
 
   // Main body build method
@@ -97,7 +96,9 @@ class _MyHomePageState extends State<MyHomePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       key: _scaffoldKey,
+      // Top App Bar (Header)
       appBar: AppBar(
+        // Hamburger menu button to open navigation menu
         leading: IconButton(
           icon: const Icon(Icons.menu),
           onPressed: () => _scaffoldKey.currentState?.openDrawer(),
@@ -120,6 +121,7 @@ class _MyHomePageState extends State<MyHomePage> {
                 decoration: BoxDecoration(
                   color: Theme.of(context).colorScheme.primary,
                 ),
+                // Close button in the header
                 child: Align(
                   alignment: Alignment.topRight,
                   child: IconButton(
@@ -130,14 +132,7 @@ class _MyHomePageState extends State<MyHomePage> {
                   ),
                 ),
               ),
-              // NEEDS TO BE UPDATED TO LINK TO DASHBOARD PAGE
-              ListTile(
-                leading: const Icon(Icons.home),
-                title: const Text('Dashboard'),
-                onTap: () {
-                  debugPrint('Dashboard tapped');
-                },
-              ),
+              // Navigate to Habit Page
               ListTile(
                 leading: const Icon(Icons.check_circle),
                 title: const Text('Habits'),
@@ -210,84 +205,33 @@ class _MyHomePageState extends State<MyHomePage> {
                                 value: _completedToday.contains(
                                   _habits[index].gId,
                                 ),
-                                // Modify habit completion status
+                                // Change habit completion status
                                 onChanged: (bool? value) async {
                                   final newVal = value ?? false;
                                   final habit = _habits[index];
+
+                                  // Update UI state
                                   setState(() {
                                     if (newVal) {
                                       _completedToday.add(habit.gId);
-                                      try {
-                                        habit.complete();
-                                      } catch (_) {}
                                     } else {
                                       _completedToday.remove(habit.gId);
                                     }
                                   });
-
-                                  // Update the progress bar after changes
                                   _updateProgressBar(
                                     _habits.length,
                                     _completedToday.length,
                                   );
 
-                                  // Save the habit status
-                                  final messenger = ScaffoldMessenger.of(
-                                    context,
+                                  // Save the Change to the Database
+                                  final ok = await setCompletion(
+                                    habit.gId,
+                                    newVal,
+                                    habit.description,
                                   );
-                                  try {
-                                    // Update logs for today's completion
-                                    final now = DateTime.now();
-                                    if (newVal) {
-                                      try {
-                                        final existingLog = await loadLog(
-                                          habit.gId,
-                                        );
-                                        // Check if a log with today's timestamp exists
-                                        final exists = existingLog.gTimeStamps
-                                            .any(
-                                              (dt) =>
-                                                  dt.year == now.year &&
-                                                  dt.month == now.month &&
-                                                  dt.day == now.day,
-                                            );
-                                        // Only add timestamp if it doesn't already exist
-                                        if (!exists) {
-                                          existingLog.timeStamps.add(now);
-                                          await saveLog(existingLog);
-                                        }
-                                      } catch (_) {
-                                        // no existing log, create one and add timestamp
-                                        final l = createLog(
-                                          habit.gId,
-                                          habit.description,
-                                        );
-                                        await l.updateTimeStamps(now);
-                                      }
-                                    } else {
-                                      try {
-                                        final existingLog = await loadLog(
-                                          habit.gId,
-                                        );
-                                        existingLog.timeStamps.removeWhere(
-                                          (dt) =>
-                                              dt.year == now.year &&
-                                              dt.month == now.month &&
-                                              dt.day == now.day,
-                                        );
-                                        if (existingLog.timeStamps.isEmpty) {
-                                          await deleteData('Logs', habit.gId);
-                                        } else {
-                                          await saveLog(existingLog);
-                                        }
-                                      } catch (_) {
-                                        debugPrint(
-                                          "No log to remove timestamp from",
-                                        );
-                                      }
-                                    }
-                                  } catch (e) {
-                                    // revert UI state on failure
+
+                                  if (!ok) {
+                                    // rollback UI on failure
                                     if (!mounted) return;
                                     setState(() {
                                       if (newVal) {
@@ -296,12 +240,11 @@ class _MyHomePageState extends State<MyHomePage> {
                                         _completedToday.add(habit.gId);
                                       }
                                     });
-                                    // Update progress bar after reverting the change
                                     _updateProgressBar(
                                       _habits.length,
                                       _completedToday.length,
                                     );
-                                    messenger.showSnackBar(
+                                    ScaffoldMessenger.of(context).showSnackBar(
                                       const SnackBar(
                                         content: Text('Failed to save state'),
                                       ),
@@ -352,7 +295,7 @@ class _MyHomePageState extends State<MyHomePage> {
                                         ),
                                       ],
                                     ),
-                                    const SizedBox(height: 4),
+                                    const SizedBox(height: 6),
                                     // End Date
                                     Row(
                                       children: [
@@ -368,7 +311,7 @@ class _MyHomePageState extends State<MyHomePage> {
                                         ),
                                       ],
                                     ),
-                                    const SizedBox(height: 8),
+                                    const SizedBox(height: 6),
                                     // Recurring Status
                                     Row(
                                       children: [
