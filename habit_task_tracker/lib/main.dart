@@ -337,22 +337,51 @@ class _MyHomePageState extends State<MyHomePage> {
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
+                                    // Start Date
                                     Row(
                                       children: [
-                                        const Icon(Icons.calendar_today, size: 14),
+                                        const Icon(
+                                          Icons.calendar_today,
+                                          size: 14,
+                                        ),
                                         const SizedBox(width: 6),
-                                        Flexible(child: Text('Start: ${_format(_habits[index].startDate)}')),
+                                        Flexible(
+                                          child: Text(
+                                            'Start: ${_format(_habits[index].startDate)}',
+                                          ),
+                                        ),
                                       ],
                                     ),
                                     const SizedBox(height: 4),
+                                    // End Date
                                     Row(
                                       children: [
-                                        const Icon(Icons.calendar_today, size: 14),
+                                        const Icon(
+                                          Icons.calendar_today,
+                                          size: 14,
+                                        ),
                                         const SizedBox(width: 6),
-                                        Flexible(child: Text('End: ${_format(_habits[index].endDate)}')),
+                                        Flexible(
+                                          child: Text(
+                                            'End: ${_format(_habits[index].endDate)}',
+                                          ),
+                                        ),
                                       ],
                                     ),
                                     const SizedBox(height: 8),
+                                    // Recurring Status
+                                    Row(
+                                      children: [
+                                        const Icon(Icons.repeat, size: 14),
+                                        const SizedBox(width: 6),
+                                        Flexible(
+                                          child: Text(
+                                            'Recurring: ${_habits[index].gIsRecurring ? frequencyToString(_habits[index].gFrequency) : "No"}',
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    // Edit/Delete Buttons
                                     Row(
                                       children: [
                                         // Habit Edit Button
@@ -383,9 +412,10 @@ class _MyHomePageState extends State<MyHomePage> {
                                               (id) async {
                                                 if (!mounted) return;
                                                 setState(() {
-                                                  final idx = _habits.indexWhere(
-                                                    (h) => h.gId == id,
-                                                  );
+                                                  final idx = _habits
+                                                      .indexWhere(
+                                                        (h) => h.gId == id,
+                                                      );
                                                   if (idx != -1) {
                                                     _habits.removeAt(idx);
                                                     _expanded.removeAt(idx);

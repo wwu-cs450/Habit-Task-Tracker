@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:habit_task_tracker/log.dart';
 
+// I got help from Copilot to write the following functions.
+
 /// Load habits from the DB and their status for today
 Future<Map<String, dynamic>> loadHabitsFromDb() async {
   final Map<String, dynamic>? all = await db.collection('data/Habits').get();
@@ -120,7 +122,14 @@ Future<void> deleteHabitWithConfirmation(
 }
 
 /// Create a Habit and save it
-Future<Habit> createAndPersistHabit(String title, String description, {DateTime? startDate, DateTime? endDate}) async {
+Future<Habit> createAndPersistHabit(
+  String title,
+  String description, {
+  DateTime? startDate,
+  DateTime? endDate,
+  bool isRecurring = false,
+  Frequency? frequency,
+}) async {
   final id = DateTime.now().millisecondsSinceEpoch.toString();
   final DateTime s = startDate ?? DateTime.now();
   final DateTime e = endDate ?? s.add(const Duration(days: 1));
@@ -130,7 +139,8 @@ Future<Habit> createAndPersistHabit(String title, String description, {DateTime?
     description: description,
     startDate: s,
     endDate: e,
-    isRecurring: false,
+    isRecurring: isRecurring,
+    frequency: frequency,
   );
 
   final Map<String, dynamic> m = habit.toJson();
@@ -149,6 +159,8 @@ Future<void> showCreateHabitDialog(
   final endDateController = TextEditingController();
   DateTime? selectedStartDate;
   DateTime? selectedEndDate;
+  bool selectedRecurring = false;
+  Frequency selectedFrequency = Frequency.daily;
 
   String formatDate(DateTime d) {
     final y = d.year.toString();
@@ -157,7 +169,7 @@ Future<void> showCreateHabitDialog(
     return '$y-$m-$day'.replaceFirst('\u007f', '');
   }
 
-  // initialize with today and end date = tomorrow
+  // initialize with start date today and end date tomorrow
   selectedStartDate = DateTime.now();
   selectedEndDate = selectedStartDate.add(const Duration(days: 1));
   dateController.text = formatDate(selectedStartDate);
@@ -167,102 +179,163 @@ Future<void> showCreateHabitDialog(
     context: context,
     barrierDismissible: true,
     useRootNavigator: true,
-    builder: (context) => AlertDialog(
-      title: const Text('New Habit'),
-      content: SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: titleController,
-              decoration: const InputDecoration(labelText: 'Title'),
-              autofocus: false,
+    builder: (context) {
+      return StatefulBuilder(
+        builder: (context, setState) {
+          return AlertDialog(
+            title: const Text('New Habit'),
+            content: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Title field
+                  TextField(
+                    controller: titleController,
+                    decoration: const InputDecoration(labelText: 'Title'),
+                    autofocus: false,
+                  ),
+                  const SizedBox(height: 12),
+                  // Description field
+                  TextField(
+                    controller: descController,
+                    decoration: const InputDecoration(labelText: 'Description'),
+                    keyboardType: TextInputType.multiline,
+                    minLines: 1,
+                    maxLines: 3,
+                    textAlignVertical: TextAlignVertical.top,
+                  ),
+                  const SizedBox(height: 12),
+                  // Recurring toggle
+                  Row(
+                    children: [
+                      const Text('Recurring'),
+                      const Spacer(),
+                      Switch(
+                        value: selectedRecurring,
+                        onChanged: (v) {
+                          setState(() {
+                            selectedRecurring = v;
+                          });
+                        },
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  // Frequency selector (only when recurring)
+                  if (selectedRecurring)
+                    Row(
+                      children: [
+                        const Text('Frequency'),
+                        const SizedBox(width: 12),
+                        DropdownButton<Frequency>(
+                          value: selectedFrequency,
+                          items: const [
+                            DropdownMenuItem(
+                                value: Frequency.daily, child: Text('Daily')),
+                            DropdownMenuItem(
+                                value: Frequency.weekly, child: Text('Weekly')),
+                            DropdownMenuItem(
+                                value: Frequency.monthly, child: Text('Monthly')),
+                            DropdownMenuItem(
+                                value: Frequency.yearly, child: Text('Yearly')),
+                          ],
+                          onChanged: (f) {
+                            if (f == null) return;
+                            setState(() {
+                              selectedFrequency = f;
+                            });
+                          },
+                        ),
+                      ],
+                    ),
+                  const SizedBox(height: 12),
+                  // Start date field
+                  TextField(
+                    controller: dateController,
+                    readOnly: true,
+                    decoration: const InputDecoration(labelText: 'Start date'),
+                    onTap: () async {
+                      final now = DateTime.now();
+                      final picked = await showDatePicker(
+                        context: context,
+                        initialDate: selectedStartDate ?? now,
+                        firstDate: DateTime(2000),
+                        lastDate: DateTime(now.year + 5),
+                      );
+                      if (picked != null) {
+                        selectedStartDate = picked;
+                        dateController.text = formatDate(picked);
+                        // If end date is before new start date, move it forward
+                        if (selectedEndDate == null ||
+                            selectedEndDate!.isBefore(picked)) {
+                          selectedEndDate = picked.add(const Duration(days: 1));
+                          endDateController.text = formatDate(selectedEndDate!);
+                        }
+                      }
+                    },
+                  ),
+                  const SizedBox(height: 12),
+                  // End date field
+                  TextField(
+                    controller: endDateController,
+                    readOnly: true,
+                    decoration: const InputDecoration(labelText: 'End date'),
+                    onTap: () async {
+                      final now = DateTime.now();
+                      final init =
+                          selectedEndDate ??
+                          (selectedStartDate ?? now).add(
+                            const Duration(days: 1),
+                          );
+                      final picked = await showDatePicker(
+                        context: context,
+                        initialDate: init,
+                        firstDate: selectedStartDate ?? DateTime(2000),
+                        lastDate: DateTime(now.year + 5),
+                      );
+                      if (picked != null) {
+                        selectedEndDate = picked;
+                        endDateController.text = formatDate(picked);
+                      }
+                    },
+                  ),
+                ],
+              ),
             ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: descController,
-              decoration: const InputDecoration(labelText: 'Description'),
-              keyboardType: TextInputType.multiline,
-              minLines: 1,
-              maxLines: 3,
-              textAlignVertical: TextAlignVertical.top,
-            ),
-            const SizedBox(height: 12),
-            // Read-only date field that opens a date picker
-            TextField(
-              controller: dateController,
-              readOnly: true,
-              decoration: const InputDecoration(labelText: 'Start date'),
-              onTap: () async {
-                final now = DateTime.now();
-                final picked = await showDatePicker(
-                  context: context,
-                  initialDate: selectedStartDate ?? now,
-                  firstDate: DateTime(2000),
-                  lastDate: DateTime(now.year + 5),
-                );
-                if (picked != null) {
-                  selectedStartDate = picked;
-                  dateController.text = formatDate(picked);
-                  // If end date is before new start date, move it forward
-                  if (selectedEndDate == null || selectedEndDate!.isBefore(picked)) {
-                    selectedEndDate = picked.add(const Duration(days: 1));
-                    endDateController.text = formatDate(selectedEndDate!);
-                  }
-                }
-              },
-            ),
-            const SizedBox(height: 12),
-            // Read-only end date field that opens a date picker
-            TextField(
-              controller: endDateController,
-              readOnly: true,
-              decoration: const InputDecoration(labelText: 'End date'),
-              onTap: () async {
-                final now = DateTime.now();
-                final init = selectedEndDate ?? (selectedStartDate ?? now).add(const Duration(days: 1));
-                final picked = await showDatePicker(
-                  context: context,
-                  initialDate: init,
-                  firstDate: selectedStartDate ?? DateTime(2000),
-                  lastDate: DateTime(now.year + 5),
-                );
-                if (picked != null) {
-                  selectedEndDate = picked;
-                  endDateController.text = formatDate(picked);
-                }
-              },
-            ),
-          ],
-        ),
-      ),
-      actions: [
-        TextButton(
-          onPressed: () async {
-            final navigator = Navigator.of(context, rootNavigator: true);
-            FocusManager.instance.primaryFocus?.unfocus();
-            try {
-              await SystemChannels.textInput.invokeMethod('TextInput.hide');
-            } catch (_) {}
-            await Future.delayed(const Duration(milliseconds: 150));
-            navigator.pop(false);
-          },
-          child: const Text('Cancel'),
-        ),
-        TextButton(
-          onPressed: () async {
-            final navigator = Navigator.of(context, rootNavigator: true);
-            FocusManager.instance.primaryFocus?.unfocus();
-            try {
-              await SystemChannels.textInput.invokeMethod('TextInput.hide');
-            } catch (_) {}
-            await Future.delayed(const Duration(milliseconds: 150));
-            navigator.pop(true);
-          },
-          child: const Text('Save'),
-        ),
-      ],
-    ),
+            actions: [
+              TextButton(
+                onPressed: () async {
+                  final navigator = Navigator.of(context, rootNavigator: true);
+                  FocusManager.instance.primaryFocus?.unfocus();
+                  try {
+                    await SystemChannels.textInput.invokeMethod(
+                      'TextInput.hide',
+                    );
+                  } catch (_) {}
+                  await Future.delayed(const Duration(milliseconds: 150));
+                  navigator.pop(false);
+                },
+                child: const Text('Cancel'),
+              ),
+              TextButton(
+                onPressed: () async {
+                  final navigator = Navigator.of(context, rootNavigator: true);
+                  FocusManager.instance.primaryFocus?.unfocus();
+                  try {
+                    await SystemChannels.textInput.invokeMethod(
+                      'TextInput.hide',
+                    );
+                  } catch (_) {}
+                  await Future.delayed(const Duration(milliseconds: 150));
+                  navigator.pop(true);
+                },
+                child: const Text('Save'),
+              ),
+            ],
+          );
+        },
+      );
+    },
   );
 
   if (saved == true) {
@@ -271,11 +344,15 @@ Future<void> showCreateHabitDialog(
         : titleController.text.trim();
     final desc = descController.text.trim();
     try {
-      // Validate end date >= start date
-      if (selectedStartDate != null && selectedEndDate != null && selectedEndDate!.isBefore(selectedStartDate!)) {
+      // Ensure that end date is on or after start date
+      if (selectedStartDate != null &&
+          selectedEndDate != null &&
+          selectedEndDate!.isBefore(selectedStartDate!)) {
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('End date must be the same or after start date')),
+            const SnackBar(
+              content: Text('End date must be the same or after start date'),
+            ),
           );
         }
         return;
@@ -286,6 +363,8 @@ Future<void> showCreateHabitDialog(
         desc.isEmpty ? 'Description' : desc,
         startDate: selectedStartDate,
         endDate: selectedEndDate,
+        isRecurring: selectedRecurring,
+        frequency: selectedRecurring ? selectedFrequency : Frequency.none,
       );
       await onCreated(habit);
     } catch (e) {
@@ -302,4 +381,20 @@ Future<void> showCreateHabitDialog(
   descController.dispose();
   dateController.dispose();
   endDateController.dispose();
+}
+
+// Convert Frequency value to a string
+String frequencyToString(Frequency f) {
+  switch (f) {
+    case Frequency.daily:
+      return 'Daily';
+    case Frequency.weekly:
+      return 'Weekly';
+    case Frequency.monthly:
+      return 'Monthly';
+    case Frequency.yearly:
+      return 'Yearly';
+    case Frequency.none:
+      return 'None';
+  }
 }
