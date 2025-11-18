@@ -89,6 +89,9 @@ class _MyHomePageState extends State<MyHomePage> {
     });
   }
 
+  // Simple date-only formatter (YYYY-MM-DD) without adding intl dependency
+  String _format(DateTime d) => d.toIso8601String().split('T').first;
+
   // Main body build method
   @override
   Widget build(BuildContext context) {
@@ -331,53 +334,73 @@ class _MyHomePageState extends State<MyHomePage> {
                                   16,
                                   12,
                                 ),
-                                child: Row(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    // Habit Edit Button
-                                    // EDITING STILL NEEDS TO BE IMPLEMENTED. SHOULD PROBABLY BE IN HABIT CLASS
-                                    IconButton(
-                                      icon: const Icon(Icons.edit),
-                                      tooltip: 'Edit',
-                                      onPressed: () {
-                                        ScaffoldMessenger.of(
-                                          context,
-                                        ).showSnackBar(
-                                          SnackBar(
-                                            content: Text(
-                                              'Edit ${_habits[index].name}',
-                                            ),
-                                          ),
-                                        );
-                                      },
+                                    Row(
+                                      children: [
+                                        const Icon(Icons.calendar_today, size: 14),
+                                        const SizedBox(width: 6),
+                                        Flexible(child: Text('Start: ${_format(_habits[index].startDate)}')),
+                                      ],
                                     ),
-                                    // Habit Delete Button
-                                    IconButton(
-                                      icon: const Icon(Icons.delete),
-                                      tooltip: 'Delete',
-                                      onPressed: () async {
-                                        final habit = _habits[index];
-                                        await deleteHabitWithConfirmation(
-                                          context,
-                                          habit,
-                                          (id) async {
-                                            if (!mounted) return;
-                                            setState(() {
-                                              final idx = _habits.indexWhere(
-                                                (h) => h.gId == id,
-                                              );
-                                              if (idx != -1) {
-                                                _habits.removeAt(idx);
-                                                _expanded.removeAt(idx);
-                                                _completedToday.remove(id);
-                                              }
-                                            });
-                                            _updateProgressBar(
-                                              _habits.length,
-                                              _completedToday.length,
+                                    const SizedBox(height: 4),
+                                    Row(
+                                      children: [
+                                        const Icon(Icons.calendar_today, size: 14),
+                                        const SizedBox(width: 6),
+                                        Flexible(child: Text('End: ${_format(_habits[index].endDate)}')),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 8),
+                                    Row(
+                                      children: [
+                                        // Habit Edit Button
+                                        IconButton(
+                                          icon: const Icon(Icons.edit),
+                                          tooltip: 'Edit',
+                                          onPressed: () {
+                                            ScaffoldMessenger.of(
+                                              context,
+                                            ).showSnackBar(
+                                              SnackBar(
+                                                content: Text(
+                                                  'Edit ${_habits[index].name}',
+                                                ),
+                                              ),
                                             );
                                           },
-                                        );
-                                      },
+                                        ),
+                                        // Habit Delete Button
+                                        IconButton(
+                                          icon: const Icon(Icons.delete),
+                                          tooltip: 'Delete',
+                                          onPressed: () async {
+                                            final habit = _habits[index];
+                                            await deleteHabitWithConfirmation(
+                                              context,
+                                              habit,
+                                              (id) async {
+                                                if (!mounted) return;
+                                                setState(() {
+                                                  final idx = _habits.indexWhere(
+                                                    (h) => h.gId == id,
+                                                  );
+                                                  if (idx != -1) {
+                                                    _habits.removeAt(idx);
+                                                    _expanded.removeAt(idx);
+                                                    _completedToday.remove(id);
+                                                  }
+                                                });
+                                                _updateProgressBar(
+                                                  _habits.length,
+                                                  _completedToday.length,
+                                                );
+                                              },
+                                            );
+                                          },
+                                        ),
+                                      ],
                                     ),
                                   ],
                                 ),

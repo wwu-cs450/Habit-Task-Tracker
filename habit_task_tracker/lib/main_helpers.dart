@@ -120,14 +120,16 @@ Future<void> deleteHabitWithConfirmation(
 }
 
 /// Create a Habit and save it
-Future<Habit> createAndPersistHabit(String title, String description) async {
+Future<Habit> createAndPersistHabit(String title, String description, {DateTime? startDate, DateTime? endDate}) async {
   final id = DateTime.now().millisecondsSinceEpoch.toString();
+  final DateTime s = startDate ?? DateTime.now();
+  final DateTime e = endDate ?? s.add(const Duration(days: 1));
   final habit = Habit(
     id: id,
     name: title,
     description: description,
-    startDate: DateTime.now(),
-    endDate: DateTime.now().add(const Duration(days: 1)),
+    startDate: s,
+    endDate: e,
     isRecurring: false,
   );
 
@@ -143,6 +145,23 @@ Future<void> showCreateHabitDialog(
 ) async {
   final titleController = TextEditingController();
   final descController = TextEditingController();
+  final dateController = TextEditingController();
+  final endDateController = TextEditingController();
+  DateTime? selectedStartDate;
+  DateTime? selectedEndDate;
+
+  String formatDate(DateTime d) {
+    final y = d.year.toString();
+    final m = d.month.toString().padLeft(2, '0');
+    final day = d.day.toString().padLeft(2, '0');
+    return '$y-$m-$day'.replaceFirst('\u007f', '');
+  }
+
+  // initialize with today and end date = tomorrow
+  selectedStartDate = DateTime.now();
+  selectedEndDate = selectedStartDate.add(const Duration(days: 1));
+  dateController.text = formatDate(selectedStartDate);
+  endDateController.text = formatDate(selectedEndDate);
 
   final saved = await showDialog<bool>(
     context: context,
@@ -167,6 +186,52 @@ Future<void> showCreateHabitDialog(
               minLines: 1,
               maxLines: 3,
               textAlignVertical: TextAlignVertical.top,
+            ),
+            const SizedBox(height: 12),
+            // Read-only date field that opens a date picker
+            TextField(
+              controller: dateController,
+              readOnly: true,
+              decoration: const InputDecoration(labelText: 'Start date'),
+              onTap: () async {
+                final now = DateTime.now();
+                final picked = await showDatePicker(
+                  context: context,
+                  initialDate: selectedStartDate ?? now,
+                  firstDate: DateTime(2000),
+                  lastDate: DateTime(now.year + 5),
+                );
+                if (picked != null) {
+                  selectedStartDate = picked;
+                  dateController.text = formatDate(picked);
+                  // If end date is before new start date, move it forward
+                  if (selectedEndDate == null || selectedEndDate!.isBefore(picked)) {
+                    selectedEndDate = picked.add(const Duration(days: 1));
+                    endDateController.text = formatDate(selectedEndDate!);
+                  }
+                }
+              },
+            ),
+            const SizedBox(height: 12),
+            // Read-only end date field that opens a date picker
+            TextField(
+              controller: endDateController,
+              readOnly: true,
+              decoration: const InputDecoration(labelText: 'End date'),
+              onTap: () async {
+                final now = DateTime.now();
+                final init = selectedEndDate ?? (selectedStartDate ?? now).add(const Duration(days: 1));
+                final picked = await showDatePicker(
+                  context: context,
+                  initialDate: init,
+                  firstDate: selectedStartDate ?? DateTime(2000),
+                  lastDate: DateTime(now.year + 5),
+                );
+                if (picked != null) {
+                  selectedEndDate = picked;
+                  endDateController.text = formatDate(picked);
+                }
+              },
             ),
           ],
         ),
@@ -206,9 +271,21 @@ Future<void> showCreateHabitDialog(
         : titleController.text.trim();
     final desc = descController.text.trim();
     try {
+      // Validate end date >= start date
+      if (selectedStartDate != null && selectedEndDate != null && selectedEndDate!.isBefore(selectedStartDate!)) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('End date must be the same or after start date')),
+          );
+        }
+        return;
+      }
+
       final habit = await createAndPersistHabit(
         title,
         desc.isEmpty ? 'Description' : desc,
+        startDate: selectedStartDate,
+        endDate: selectedEndDate,
       );
       await onCreated(habit);
     } catch (e) {
@@ -223,4 +300,6 @@ Future<void> showCreateHabitDialog(
 
   titleController.dispose();
   descController.dispose();
+  dateController.dispose();
+  endDateController.dispose();
 }
