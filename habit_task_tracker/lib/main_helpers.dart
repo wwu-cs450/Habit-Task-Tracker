@@ -17,7 +17,6 @@ Future<Map<String, dynamic>> loadHabitsFromDb() async {
       final Map<String, dynamic> rawMap = Map<String, dynamic>.from(
         entry.value,
       );
-      // Try to load the habit using the preferred loader, fall back to parsing JSON.
       try {
         final Habit habit = await loadHabit(id);
         list.add(habit);
