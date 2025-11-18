@@ -17,45 +17,23 @@ Future<Map<String, dynamic>> loadHabitsFromDb() async {
       final Map<String, dynamic> rawMap = Map<String, dynamic>.from(
         entry.value,
       );
-      // Determine if habit was completed today
+      // Try to load the habit using the preferred loader, fall back to parsing JSON.
       try {
         final Habit habit = await loadHabit(id);
         list.add(habit);
-        bool completedToday = false;
-        try {
-          final l = await loadLog(habit.gId);
-          final now = DateTime.now();
-          completedToday = l.gTimeStamps.any(
-            (dt) =>
-                dt.year == now.year &&
-                dt.month == now.month &&
-                dt.day == now.day,
-          );
-        } catch (_) {
-          completedToday = false;
-        }
+        final bool completedToday = await _isCompletedToday(habit);
         loadedCompleted.add(completedToday);
       } catch (e) {
-        // Load from JSON if load habit method failed
+        // If loadHabit fails, attempt a JSON parse fallback.
         try {
           final Habit habit = Habit.fromJson(rawMap);
           list.add(habit);
-          bool completedToday = false;
-          try {
-            final l = await loadLog(habit.gId);
-            final now = DateTime.now();
-            completedToday = l.gTimeStamps.any(
-              (dt) =>
-                  dt.year == now.year &&
-                  dt.month == now.month &&
-                  dt.day == now.day,
-            );
-          } catch (_) {
-            completedToday = false;
-          }
+          final bool completedToday = await _isCompletedToday(habit);
           loadedCompleted.add(completedToday);
         } catch (err) {
-          debugPrint('Failed to load/parse habit $id: $e / $err');
+          debugPrint(
+            'Failed to load habit $id. loadHabit() error: $e; fromJson() error: $err',
+          );
         }
       }
     }
@@ -453,6 +431,17 @@ Future<bool> setCompletion(
     return true;
   } catch (e) {
     debugPrint('Failed to persist completion for $habitId: $e');
+    return false;
+  }
+}
+
+/// Check whether a Habit has a log timestamp for today.
+Future<bool> _isCompletedToday(Habit habit) async {
+  try {
+    final l = await loadLog(habit.gId);
+    final now = DateTime.now();
+    return l.gTimeStamps.any((dt) => isSameDay(dt, now));
+  } catch (_) {
     return false;
   }
 }
