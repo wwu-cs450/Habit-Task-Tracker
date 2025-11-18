@@ -332,8 +332,7 @@ Future<void> showCreateHabitDialog(
     final desc = descController.text.trim();
     try {
       // Ensure that end date is on or after start date
-      if (selectedStartDate != null &&
-          selectedEndDate != null) {
+      if (selectedStartDate != null && selectedEndDate != null) {
         // Normalize dates to remove time components
         final startDateOnly = DateTime(
           selectedStartDate!.year,
