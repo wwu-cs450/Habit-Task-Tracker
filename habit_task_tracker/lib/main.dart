@@ -224,6 +224,7 @@ class _MyHomePageState extends State<MyHomePage> {
                                   );
 
                                   // Save the Change to the Database
+                                  final messenger = ScaffoldMessenger.of(context);
                                   final ok = await setCompletion(
                                     habit.gId,
                                     newVal,
@@ -244,7 +245,7 @@ class _MyHomePageState extends State<MyHomePage> {
                                       _habits.length,
                                       _completedToday.length,
                                     );
-                                    ScaffoldMessenger.of(context).showSnackBar(
+                                    messenger.showSnackBar(
                                       const SnackBar(
                                         content: Text('Failed to save state'),
                                       ),
