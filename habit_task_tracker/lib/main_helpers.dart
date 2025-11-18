@@ -137,6 +137,10 @@ Future<Habit> createAndPersistHabit(
   final id = DateTime.now().millisecondsSinceEpoch.toString();
   final DateTime s = startDate ?? DateTime.now();
   final DateTime e = endDate ?? s.add(const Duration(days: 1));
+  final Frequency effectiveFrequency = isRecurring
+      ? (frequency ?? Frequency.daily)
+      : (frequency ?? Frequency.none);
+
   final habit = Habit(
     id: id,
     name: title,
@@ -144,7 +148,7 @@ Future<Habit> createAndPersistHabit(
     startDate: s,
     endDate: e,
     isRecurring: isRecurring,
-    frequency: frequency,
+    frequency: effectiveFrequency,
   );
 
   final Map<String, dynamic> m = habit.toJson();
@@ -277,12 +281,6 @@ Future<void> showCreateHabitDialog(
                       if (picked != null) {
                         selectedStartDate = picked;
                         dateController.text = formatDate(picked);
-                        // If end date is before new start date, move it forward
-                        if (selectedEndDate == null ||
-                            selectedEndDate!.isBefore(picked)) {
-                          selectedEndDate = picked.add(const Duration(days: 1));
-                          endDateController.text = formatDate(selectedEndDate!);
-                        }
                       }
                     },
                   ),

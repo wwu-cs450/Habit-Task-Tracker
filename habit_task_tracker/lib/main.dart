@@ -224,7 +224,9 @@ class _MyHomePageState extends State<MyHomePage> {
                                   );
 
                                   // Save the Change to the Database
-                                  final messenger = ScaffoldMessenger.of(context);
+                                  final messenger = ScaffoldMessenger.of(
+                                    context,
+                                  );
                                   final ok = await setCompletion(
                                     habit.gId,
                                     newVal,
