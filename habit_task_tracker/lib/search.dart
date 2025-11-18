@@ -1,6 +1,5 @@
 import 'package:flutter/cupertino.dart';
 import 'package:habit_task_tracker/habit.dart';
-// import 'package:habit_task_tracker/log.dart';
 import 'package:localstore/localstore.dart';
 import 'dart:io';
 import 'package:path_provider/path_provider.dart';
@@ -21,10 +20,7 @@ Future<List<Habit>> searchHabits({
   String? description,
 }) {
   Future<List<Habit>> results = Future.value([]);
-  if (!exists) {
-    print('No habits found in the database. in $filePath');
-    return results;
-  }
+  if (!exists) {return results;}
   if (date1 != null && date2 != null) {
     return searchHabitsBetweenDates(date1, date2);
   } else if (name != null) {
@@ -36,7 +32,6 @@ Future<List<Habit>> searchHabits({
       name == null &&
       description == null) {
     return searchAllHabits();
-    return results;
   }
   return results;
 }
@@ -46,16 +41,8 @@ Future<List<Habit>> searchHabitsBetweenDates(
   DateTime date2,
 ) async {
   List<Habit> results = [];
-  if (!exists) {
-    print('No habits found in the database.');
-    return results;
-  }
   final habitsData = await collectionHabits?.get();
-  if (habitsData == null) {
-    print('No habits data found.');
-    return results;
-  }
-  ;
+  if (habitsData == null) {return results;}
   habitsData.forEach((id, data) {
     Habit habit = Habit.fromJson(data);
     if ((habit.startDate.isAfter(date1) ||
@@ -70,16 +57,8 @@ Future<List<Habit>> searchHabitsBetweenDates(
 
 Future<List<Habit>> searchHabitsByName(String name) async {
   List<Habit> results = [];
-  if (!exists) {
-    print('No habits found in the database.');
-    return results;
-  }
   final habitsData = await collectionHabits?.get();
-  if (habitsData == null) {
-    print('No habits data found.');
-    return results;
-  }
-  ;
+  if (habitsData == null) {return results;}
   habitsData.forEach((id, data) {
     Habit habit = Habit.fromJson(data);
     int ratioName = ratio(habit.name.toLowerCase(), name.toLowerCase());
@@ -92,16 +71,8 @@ Future<List<Habit>> searchHabitsByName(String name) async {
 
 Future<List<Habit>> searchHabitsByDescription(String description) async {
   List<Habit> results = [];
-  if (!exists) {
-    print('No habits found in the database.');
-    return results;
-  }
   final habitsData = await collectionHabits?.get();
-  if (habitsData == null) {
-    print('No habits data found.');
-    return results;
-  }
-  ;
+  if (habitsData == null) {return results;}
   habitsData.forEach((id, data) {
     Habit habit = Habit.fromJson(data);
     if (habit.description != null) {
@@ -120,15 +91,8 @@ Future<List<Habit>> searchHabitsByDescription(String description) async {
 
 Future<List<Habit>> searchAllHabits() async {
   List<Habit> results = [];
-  if (!exists) {
-    print('No habits found in the database.');
-    return results;
-  }
   final habitsData = await collectionHabits?.get();
-  if (habitsData == null) {
-    print('No habits data found.');
-    return results;
-  }
+  if (habitsData == null) {return results;}
   habitsData.forEach((id, data) {
     Habit habit = Habit.fromJson(data);
     results.add(habit);
