@@ -21,13 +21,16 @@ void main() {
       expect(uuid.toString(), equals(validUuid));
     });
 
-    test('throws FormatException for invalid UUID format - missing hyphens', () {
-      const invalidUuid = '550e8400e29b41d4a716446655440000';
-      expect(
-        () => Uuid.fromString(invalidUuid),
-        throwsA(isA<FormatException>()),
-      );
-    });
+    test(
+      'throws FormatException for invalid UUID format - missing hyphens',
+      () {
+        const invalidUuid = '550e8400e29b41d4a716446655440000';
+        expect(
+          () => Uuid.fromString(invalidUuid),
+          throwsA(isA<FormatException>()),
+        );
+      },
+    );
 
     test('throws FormatException for invalid UUID format - wrong length', () {
       const invalidUuid = '550e8400-e29b-41d4-a716-44665544000';
@@ -37,19 +40,19 @@ void main() {
       );
     });
 
-    test('throws FormatException for invalid UUID format - invalid characters', () {
-      const invalidUuid = '550e8400-e29b-41d4-a716-44665544000g';
-      expect(
-        () => Uuid.fromString(invalidUuid),
-        throwsA(isA<FormatException>()),
-      );
-    });
+    test(
+      'throws FormatException for invalid UUID format - invalid characters',
+      () {
+        const invalidUuid = '550e8400-e29b-41d4-a716-44665544000g';
+        expect(
+          () => Uuid.fromString(invalidUuid),
+          throwsA(isA<FormatException>()),
+        );
+      },
+    );
 
     test('throws FormatException for empty string', () {
-      expect(
-        () => Uuid.fromString(''),
-        throwsA(isA<FormatException>()),
-      );
+      expect(() => Uuid.fromString(''), throwsA(isA<FormatException>()));
     });
 
     test('throws FormatException for non-UUID string', () {
@@ -64,7 +67,7 @@ void main() {
     test('generates valid UUID v4', () {
       final uuid = Uuid.generate();
       final uuidString = uuid.toString();
-      
+
       // Check format: 8-4-4-4-12 hex digits
       final uuidRegex = RegExp(
         r'^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$',
@@ -180,4 +183,3 @@ void main() {
     });
   });
 }
-

@@ -46,4 +46,3 @@ class Uuid {
   @override
   int get hashCode => _value.hashCode;
 }
-
