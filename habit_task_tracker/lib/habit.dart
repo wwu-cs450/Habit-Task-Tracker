@@ -40,6 +40,7 @@ class Habit {
     required DateTime startDate,
     required DateTime endDate,
     required bool isRecurring,
+    List<DateTime>? completedDates,
 
     /// If true, do not use the cached Habit instance for this id.
     bool? skipCache,
