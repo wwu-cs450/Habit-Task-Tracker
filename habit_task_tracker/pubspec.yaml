@@ -37,6 +37,8 @@ dependencies:
   cupertino_icons: ^1.0.8
   fuzzywuzzy: ^1.2.0
 
+  table_calendar: ^3.0.9
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
