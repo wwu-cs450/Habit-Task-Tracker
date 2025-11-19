@@ -5,6 +5,7 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'habit.dart';
 import 'main_helpers.dart';
 import 'calendar.dart';
+import 'uuid.dart';
 
 // I got some help from GitHub CoPilot with this code. I also got some ideas from
 // this youtube video: https://www.youtube.com/watch?v=K4P5DZ9TRns
@@ -264,7 +265,7 @@ class _MyHomePageState extends State<MyHomePage> {
                                     context,
                                   );
                                   final ok = await setCompletion(
-                                    habit.gId,
+                                    Uuid.fromString(habit.gId),
                                     newVal,
                                     habit.description,
                                   );
