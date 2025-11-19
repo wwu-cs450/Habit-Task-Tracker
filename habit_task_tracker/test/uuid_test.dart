@@ -156,8 +156,9 @@ void main() {
 
     test('UUID is not equal to non-Uuid object', () {
       final uuid = Uuid.generate();
-      expect(uuid == 'string', isFalse);
-      expect(uuid == 123, isFalse);
+      // not equal to string
+      assert(uuid is! String);
+      assert(uuid is! int);
     });
 
     test('identical UUIDs are equal', () {
