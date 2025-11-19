@@ -46,3 +46,6 @@ app.*.map.json
 
 # Localstore database files
 /data/
+
+# Unrelated files
+/macos/

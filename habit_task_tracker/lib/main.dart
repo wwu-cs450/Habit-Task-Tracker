@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:habit_task_tracker/notifier.dart' as notifier;
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'habit.dart';
 import 'main_helpers.dart';
 import 'calendar.dart';
@@ -6,8 +8,14 @@ import 'calendar.dart';
 // I got some help from GitHub CoPilot with this code. I also got some ideas from
 // this youtube video: https://www.youtube.com/watch?v=K4P5DZ9TRns
 
-void main() {
-  runApp(const MyApp());
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  const MyApp app = MyApp();
+
+  await notifier.Notification.initialize(MyApp.onNotificationPressed);
+
+  runApp(app);
 }
 
 // Class to provide styling and information for the entire app
@@ -27,6 +35,12 @@ class MyApp extends StatelessWidget {
       ),
       home: const MyHomePage(title: 'Habits'),
     );
+  }
+
+  static void onNotificationPressed(NotificationResponse response) {
+    // final String? payload = response.payload;
+    // In future, highlight specific habit based on payload
+    // print('Notification tapped for habit with id: $payload');
   }
 }
 

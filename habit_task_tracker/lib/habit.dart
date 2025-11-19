@@ -1,5 +1,8 @@
 import 'package:habit_task_tracker/backend.dart';
 import 'package:habit_task_tracker/log.dart';
+import 'package:habit_task_tracker/notifier.dart' as notifier;
+import 'package:duration/duration.dart';
+import 'package:logger/logger.dart';
 import 'package:table_calendar/table_calendar.dart';
 
 enum Frequency { daily, weekly, monthly, yearly, none }
@@ -11,7 +14,6 @@ Map<String, Frequency> frequencyMap = {
   'Frequency.yearly': Frequency.yearly,
   'Frequency.none': Frequency.none,
 };
-
 Log createLog(String id, String? description) {
   return Log(habitId: id, notes: description);
 }
@@ -24,37 +26,67 @@ class Habit {
   DateTime startDate;
   DateTime endDate;
   bool isRecurring;
-  Frequency? frequency;
+  Frequency frequency;
   Log log;
   List<DateTime> completedDates;
+  List<notifier.Notification> notifications;
+  // Should only be accessed from the main isolate
+  // for thread safety
+  static final Map<String, Habit> _habitCache = {};
+  static final logger = Logger();
+  factory Habit({
+    required String id,
+    required String name,
+    required DateTime startDate,
+    required DateTime endDate,
+    required bool isRecurring,
+    List<DateTime>? completedDates,
 
-  Habit({
+    /// If true, do not use the cached Habit instance for this id.
+    bool? skipCache,
+    Frequency? frequency,
+    String? description,
+  }) {
+    if (_habitCache.containsKey(id) && skipCache != true) {
+      return _habitCache[id]!;
+    }
+    final habit = Habit._internal(
+      id: id,
+      name: name,
+      startDate: startDate,
+      endDate: endDate,
+      isRecurring: isRecurring,
+      frequency: frequency ?? Frequency.none,
+      description: description,
+      notifications: [],
+    );
+    _habitCache[id] = habit;
+    return habit;
+  }
+  static Habit? fromId(String id) {
+    return _habitCache[id];
+  }
+
+  Habit._internal({
     required String id,
     required this.name,
     required this.startDate,
     required this.endDate,
     required this.isRecurring,
-    this.frequency,
+    required this.frequency,
     this.description,
+    required this.notifications,
     List<DateTime>? completedDates, // optional in constructor
   }) : _id = id,
        log = createLog(id, description),
        completedDates = completedDates ?? [];
-
   String get gId => _id;
-
   String get gName => name;
-
   DateTime get gStartDate => startDate;
-
   DateTime get gEndDate => endDate;
-
   bool get gIsRecurring => isRecurring;
-
-  Frequency get gFrequency => frequency ?? Frequency.none;
-
+  Frequency get gFrequency => frequency;
   dynamic get gCompleted => _completed;
-
   Map<String, dynamic> toJson() {
     return {
       'id': _id,
@@ -80,7 +112,45 @@ class Habit {
       completedDates: (json['completedDates'] as List<dynamic>?)
           ?.map((e) => DateTime.parse(e))
           .toList(),
+    )
+    // Following line can be uncommented once
+    // `withNotification()` is idempotent.
+    // For now, behavior is unchanged
+    // .withNotification()
+    ;
+  }
+  // Schedule notification for a habit. Automatically
+  // handles scheduling, recurrence, etc. This function
+  // is not idempotent *yet*; that's a stretch goal.
+  //
+  // Intended to be used like this:
+  //   final habit = Habit(...).withNotification();
+  Habit withNotification({
+    Duration reminderLeadTime = const Duration(hours: 1),
+  }) {
+    // Ensure that startDate is in the future
+    // Might be smart to do this in the initializer
+    final DateTime notifDateTime = _earliestDate(
+      startDate.add(reminderLeadTime), // Task time - lead time
+      DateTime.now().add(
+        Duration(seconds: 1),
+      ), // At least 1 second in the future
     );
+    final notification = notifier.Notification(
+      this,
+      'Reminder for $name',
+      'Don\'t forget to complete your habit!\nIt\'s due in ${reminderLeadTime.pretty(abbreviated: false)}.',
+    );
+    notifications.add(notification);
+    // `Notification.showScheduled` handles recurrence automatically
+    notification.showScheduled(notifDateTime).catchError((e, stack) {
+      logger.e('Failed to schedule notification for habit with ID $gId: $e');
+    });
+    return this;
+  }
+
+  DateTime _earliestDate(DateTime a, DateTime b) {
+    return a.isBefore(b) ? a : b;
   }
 
   void complete([DateTime? day]) {

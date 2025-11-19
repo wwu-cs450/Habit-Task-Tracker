@@ -3,6 +3,7 @@ import 'package:habit_task_tracker/habit.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:habit_task_tracker/log.dart';
+import 'package:habit_task_tracker/notifier.dart' as notifier;
 
 // I got help from Copilot to write the following functions.
 
@@ -99,6 +100,11 @@ Future<void> deleteHabitWithConfirmation(
   } catch (e) {
     debugPrint('Failed to delete habit ${habit.gId}: $e');
   }
+  try {
+    await notifier.Notification.cancel(habit);
+  } catch (e) {
+    debugPrint('Failed to cancel notification for ${habit.gId}: $e');
+  }
 }
 
 // THIS COULD LIKELY BE MOVED TO HABIT.DART
@@ -126,7 +132,7 @@ Future<Habit> createAndPersistHabit(
     endDate: e,
     isRecurring: isRecurring,
     frequency: effectiveFrequency,
-  );
+  ).withNotification();
 
   final Map<String, dynamic> m = habit.toJson();
   await db.collection('data/Habits').doc(id).set(m);
