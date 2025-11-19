@@ -323,11 +323,13 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
                 leading: const Icon(Icons.calendar_today),
                 title: const Text('Calendar'),
                 onTap: () {
-                      debugPrint('Calendar tapped');
-                      Navigator.pop(context);
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (_) => CalendarPage(habits: _habits)),
+                  debugPrint('Calendar tapped');
+                  Navigator.pop(context);
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => CalendarPage(habits: _habits),
+                    ),
                   );
                 },
               ),

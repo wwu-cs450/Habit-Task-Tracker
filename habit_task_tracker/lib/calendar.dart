@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:table_calendar/table_calendar.dart';
-import 'habit.dart'; 
+import 'habit.dart';
 
 class CalendarPage extends StatefulWidget {
   final List<Habit> habits;
@@ -17,9 +17,7 @@ class _CalendarPageState extends State<CalendarPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text("Habit Calendar"),
-      ),
+      appBar: AppBar(title: const Text("Habit Calendar")),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: TableCalendar(
@@ -60,11 +58,11 @@ class _CalendarPageState extends State<CalendarPage> {
               );
             }
           },
-          
+
           onPageChanged: (focusedDay) {
             setState(() {
-            _focusedDay = focusedDay;
-          });
+              _focusedDay = focusedDay;
+            });
           },
 
           eventLoader: (day) {
