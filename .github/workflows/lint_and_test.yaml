@@ -1,4 +1,4 @@
-name: Lint and Test Flutter App
+name: Lint and Test
 
 # Run on push or PR to main branch
 on:
