@@ -1,6 +1,7 @@
 import 'package:habit_task_tracker/backend.dart';
 import 'package:habit_task_tracker/log.dart';
 import 'package:habit_task_tracker/notifier.dart' as notifier;
+import 'package:habit_task_tracker/uuid.dart';
 import 'package:duration/duration.dart';
 import 'package:logger/logger.dart';
 import 'package:table_calendar/table_calendar.dart';
@@ -14,12 +15,12 @@ Map<String, Frequency> frequencyMap = {
   'Frequency.yearly': Frequency.yearly,
   'Frequency.none': Frequency.none,
 };
-Log createLog(String id, String? description) {
+Log createLog(Uuid id, String? description) {
   return Log(habitId: id, notes: description);
 }
 
 class Habit {
-  final String _id;
+  final Uuid _id;
   dynamic _completed;
   String name;
   String? description;
@@ -35,7 +36,7 @@ class Habit {
   static final Map<String, Habit> _habitCache = {};
   static final logger = Logger();
   factory Habit({
-    required String id,
+    String? id,
     required String name,
     required DateTime startDate,
     required DateTime endDate,
@@ -47,11 +48,13 @@ class Habit {
     Frequency? frequency,
     String? description,
   }) {
-    if (_habitCache.containsKey(id) && skipCache != true) {
-      return _habitCache[id]!;
+    final uuid = Uuid.fromStringOrGenerate(id);
+    final uuidString = uuid.toString();
+    if (_habitCache.containsKey(uuidString) && skipCache != true) {
+      return _habitCache[uuidString]!;
     }
     final habit = Habit._internal(
-      id: id,
+      id: uuid,
       name: name,
       startDate: startDate,
       endDate: endDate,
@@ -60,7 +63,7 @@ class Habit {
       description: description,
       notifications: [],
     );
-    _habitCache[id] = habit;
+    _habitCache[uuidString] = habit;
     return habit;
   }
   static Habit? fromId(String id) {
@@ -68,7 +71,7 @@ class Habit {
   }
 
   Habit._internal({
-    required String id,
+    required Uuid id,
     required this.name,
     required this.startDate,
     required this.endDate,
@@ -80,7 +83,7 @@ class Habit {
   }) : _id = id,
        log = createLog(id, description),
        completedDates = completedDates ?? [];
-  String get gId => _id;
+  String get gId => _id.toString();
   String get gName => name;
   DateTime get gStartDate => startDate;
   DateTime get gEndDate => endDate;
@@ -89,7 +92,7 @@ class Habit {
   dynamic get gCompleted => _completed;
   Map<String, dynamic> toJson() {
     return {
-      'id': _id,
+      'id': _id.toString(),
       'name': name,
       'description': description,
       'startDate': startDate.toIso8601String(),
@@ -102,15 +105,15 @@ class Habit {
 
   factory Habit.fromJson(Map<String, dynamic> json) {
     return Habit(
-      id: json['id'],
-      name: json['name'],
-      description: json['description'],
-      startDate: DateTime.parse(json['startDate']),
-      endDate: DateTime.parse(json['endDate']),
-      isRecurring: json['isRecurring'],
-      frequency: frequencyMap[json['frequency']] ?? Frequency.none,
+      id: json['id'] as String?,
+      name: json['name'] as String,
+      description: json['description'] as String?,
+      startDate: DateTime.parse(json['startDate'] as String),
+      endDate: DateTime.parse(json['endDate'] as String),
+      isRecurring: json['isRecurring'] as bool,
+      frequency: frequencyMap[json['frequency'] as String] ?? Frequency.none,
       completedDates: (json['completedDates'] as List<dynamic>?)
-          ?.map((e) => DateTime.parse(e))
+          ?.map((e) => DateTime.parse(e as String))
           .toList(),
     )
     // Following line can be uncommented once
