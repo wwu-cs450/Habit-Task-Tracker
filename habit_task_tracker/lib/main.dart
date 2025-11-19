@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:habit_task_tracker/notifier.dart' as notifier;
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
-import 'package:flutter/services.dart';
 import 'habit.dart';
-import 'backend.dart';
+import 'main_helpers.dart';
+import 'calendar.dart';
 
 // I got some help from GitHub CoPilot with this code. I also got some ideas from
 // this youtube video: https://www.youtube.com/watch?v=K4P5DZ9TRns
@@ -24,7 +24,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Flutter Demo',
+      title: 'Habit Task Tracker',
       theme: ThemeData(
         // Need to decide what color scheme to use
         colorScheme: ColorScheme.fromSeed(
@@ -55,11 +55,12 @@ class MyHomePage extends StatefulWidget {
 }
 
 // Main state class for the home page
-class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
-  // Create lists to store habits and their UI state
-  // THIS WILL BE HANDLED IN THE HABIT CLASS BY STORING LOGS
+class _MyHomePageState extends State<MyHomePage> {
+  // Create list to store habits
   List<Habit> _habits = <Habit>[];
-  final List<bool> _checked = <bool>[];
+  // Track which habit IDs have a log timestamp for today.
+  final Set<String> _completedToday = <String>{};
+  // Track which habit cards are expanded in the UI
   final List<bool> _expanded = <bool>[];
 
   double progress = 0.0;
@@ -68,57 +69,28 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
   @override
   void initState() {
     super.initState();
-    _loadHabits();
-  }
-
-  // Load habits from the database (currently localstore)
-  Future<void> _loadHabits() async {
-    try {
-      final Map<String, dynamic>? all = await db
-          .collection('data/Habits')
-          .get();
-      final List<Habit> list = <Habit>[];
-      final List<bool> loadedCompleted = <bool>[];
-      if (all != null) {
-        all.forEach((key, value) {
-          try {
-            final Map<String, dynamic> map = Map<String, dynamic>.from(value);
-            list.add(Habit.fromJson(map));
-            loadedCompleted.add(map['completed'] == true);
-          } catch (e) {
-            debugPrint('Failed to parse habit $key: $e');
-          }
+    // Load habits from the database and save it to the UI state
+    loadHabitsFromDb()
+        .then((result) {
+          if (!mounted) return;
+          final List<Habit> habits = (result['habits'] as List<dynamic>)
+              .cast<Habit>();
+          final Set<String> completed = (result['completedIds'] as Set<dynamic>)
+              .cast<String>();
+          setState(() {
+            _habits = habits;
+            _completedToday.clear();
+            _completedToday.addAll(completed);
+            _expanded.clear();
+            for (var _ in _habits) {
+              _expanded.add(false);
+            }
+          });
+          _updateProgressBar(_habits.length, _completedToday.length);
+        })
+        .catchError((e) {
+          debugPrint('Error loading habits: $e');
         });
-      }
-
-      // Match habits with their completed status, then sort them so newest is first
-      final List<MapEntry<Habit, bool>> paired = <MapEntry<Habit, bool>>[];
-      for (var i = 0; i < list.length; i++) {
-        paired.add(
-          MapEntry(
-            list[i],
-            i < loadedCompleted.length ? loadedCompleted[i] : false,
-          ),
-        );
-      }
-      paired.sort((a, b) => b.key.startDate.compareTo(a.key.startDate));
-
-      setState(() {
-        _habits = paired.map((e) => e.key).toList();
-        _checked.clear();
-        for (var e in paired) {
-          _checked.add(e.value);
-        }
-        _expanded.clear();
-        for (var _ in _habits) {
-          _expanded.add(false);
-        }
-      });
-      // Update progress after loading
-      _updateProgressBar(_habits.length, _checked.where((v) => v).length);
-    } catch (e) {
-      debugPrint('Error loading habits: $e');
-    }
   }
 
   // Method for updating the Progress Bar
@@ -282,11 +254,17 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
   }
 
   // MAIN BODY BUILD METHOD
+  // Format DateTime to Date string
+  String _format(DateTime d) => d.toIso8601String().split('T').first;
+
+  // Main body build method
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       key: _scaffoldKey,
+      // Top App Bar (Header)
       appBar: AppBar(
+        // Hamburger menu button to open navigation menu
         leading: IconButton(
           icon: const Icon(Icons.menu),
           onPressed: () => _scaffoldKey.currentState?.openDrawer(),
@@ -309,6 +287,7 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
                 decoration: BoxDecoration(
                   color: Theme.of(context).colorScheme.primary,
                 ),
+                // Close button in the header
                 child: Align(
                   alignment: Alignment.topRight,
                   child: IconButton(
@@ -319,14 +298,7 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
                   ),
                 ),
               ),
-              // NEEDS TO BE UPDATED TO LINK TO DASHBOARD PAGE
-              ListTile(
-                leading: const Icon(Icons.home),
-                title: const Text('Dashboard'),
-                onTap: () {
-                  debugPrint('Dashboard tapped');
-                },
-              ),
+              // Navigate to Habit Page
               ListTile(
                 leading: const Icon(Icons.check_circle),
                 title: const Text('Habits'),
@@ -334,12 +306,19 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
                   Navigator.pop(context);
                 },
               ),
-              // NEEDS TO BE UPDATED TO LINK TO CALENDAR PAGE
+
               ListTile(
                 leading: const Icon(Icons.calendar_today),
                 title: const Text('Calendar'),
                 onTap: () {
                   debugPrint('Calendar tapped');
+                  Navigator.pop(context);
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => CalendarPage(habits: _habits),
+                    ),
+                  );
                 },
               ),
             ],
@@ -347,15 +326,16 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
         ),
       ),
 
+      // Main Page
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
           children: [
+            // Progress Bar
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 8.0),
               child: Row(
                 children: [
-                  // Progress Bar
                   Expanded(
                     child: LinearProgressIndicator(
                       value: progress,
@@ -375,8 +355,10 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
             Expanded(
               child: ListView.separated(
                 itemCount: _habits.length,
+                // Card spacing
                 separatorBuilder: (context, index) =>
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 10),
+                // Cards
                 itemBuilder: (context, index) {
                   return ClipRect(
                     child: AnimatedSize(
@@ -393,49 +375,50 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
                             ListTile(
                               // Checkbox to mark habit as done/not done
                               leading: Checkbox(
-                                value: _checked[index],
+                                value: _completedToday.contains(
+                                  _habits[index].gId,
+                                ),
+                                // Change habit completion status
                                 onChanged: (bool? value) async {
                                   final newVal = value ?? false;
+                                  final habit = _habits[index];
+
+                                  // Update UI state
                                   setState(() {
-                                    _checked[index] = newVal;
-                                    // Optionally update habit internal state
                                     if (newVal) {
-                                      try {
-                                        _habits[index].complete();
-                                      } catch (_) {}
+                                      _completedToday.add(habit.gId);
+                                    } else {
+                                      _completedToday.remove(habit.gId);
                                     }
                                   });
-
-                                  // Update the progress bar after changes
                                   _updateProgressBar(
                                     _habits.length,
-                                    _checked.where((v) => v).length,
+                                    _completedToday.length,
                                   );
 
-                                  // Save the habit status
-                                  final habit = _habits[index];
+                                  // Save the Change to the Database
                                   final messenger = ScaffoldMessenger.of(
                                     context,
                                   );
-                                  try {
-                                    final Map<String, dynamic> m = habit
-                                        .toJson();
-                                    m['completed'] = newVal;
-                                    await db
-                                        .collection('data/Habits')
-                                        .doc(habit.gId)
-                                        .set(m);
-                                    // Handle issues and revert changes on failure
-                                  } catch (e) {
-                                    // revert UI state on failure
+                                  final ok = await setCompletion(
+                                    habit.gId,
+                                    newVal,
+                                    habit.description,
+                                  );
+
+                                  if (!ok) {
+                                    // rollback UI on failure
                                     if (!mounted) return;
                                     setState(() {
-                                      _checked[index] = !newVal;
+                                      if (newVal) {
+                                        _completedToday.remove(habit.gId);
+                                      } else {
+                                        _completedToday.add(habit.gId);
+                                      }
                                     });
-                                    // Update progress bar after reverting the change
                                     _updateProgressBar(
                                       _habits.length,
-                                      _checked.where((v) => v).length,
+                                      _completedToday.length,
                                     );
                                     messenger.showSnackBar(
                                       const SnackBar(
@@ -470,32 +453,103 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
                                   16,
                                   12,
                                 ),
-                                child: Row(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    // Habit Edit Button
-                                    // EDITING STILL NEEDS TO BE IMPLEMENTED. SHOULD PROBABLY BE IN HABIT CLASS
-                                    IconButton(
-                                      icon: const Icon(Icons.edit),
-                                      tooltip: 'Edit',
-                                      onPressed: () {
-                                        ScaffoldMessenger.of(
-                                          context,
-                                        ).showSnackBar(
-                                          SnackBar(
-                                            content: Text(
-                                              'Edit ${_habits[index].name}',
-                                            ),
+                                    // Start Date
+                                    Row(
+                                      children: [
+                                        const Icon(
+                                          Icons.calendar_today,
+                                          size: 14,
+                                        ),
+                                        const SizedBox(width: 6),
+                                        Flexible(
+                                          child: Text(
+                                            'Start: ${_format(_habits[index].startDate)}',
                                           ),
-                                        );
-                                      },
+                                        ),
+                                      ],
                                     ),
-                                    // Habit Delete Button
-                                    IconButton(
-                                      icon: const Icon(Icons.delete),
-                                      tooltip: 'Delete',
-                                      onPressed: () {
-                                        deleteHabit(index);
-                                      },
+                                    const SizedBox(height: 6),
+                                    // End Date
+                                    Row(
+                                      children: [
+                                        const Icon(
+                                          Icons.calendar_today,
+                                          size: 14,
+                                        ),
+                                        const SizedBox(width: 6),
+                                        Flexible(
+                                          child: Text(
+                                            'End: ${_format(_habits[index].endDate)}',
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 6),
+                                    // Recurring Status
+                                    Row(
+                                      children: [
+                                        const Icon(Icons.repeat, size: 14),
+                                        const SizedBox(width: 6),
+                                        Flexible(
+                                          child: Text(
+                                            'Recurring: ${_habits[index].gIsRecurring ? frequencyToString(_habits[index].gFrequency) : "No"}',
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    // Edit/Delete Buttons
+                                    Row(
+                                      children: [
+                                        // Habit Edit Button
+                                        IconButton(
+                                          icon: const Icon(Icons.edit),
+                                          tooltip: 'Edit',
+                                          onPressed: () {
+                                            ScaffoldMessenger.of(
+                                              context,
+                                            ).showSnackBar(
+                                              SnackBar(
+                                                content: Text(
+                                                  'Edit ${_habits[index].name}',
+                                                ),
+                                              ),
+                                            );
+                                          },
+                                        ),
+                                        // Habit Delete Button
+                                        IconButton(
+                                          icon: const Icon(Icons.delete),
+                                          tooltip: 'Delete',
+                                          onPressed: () async {
+                                            final habit = _habits[index];
+                                            await deleteHabitWithConfirmation(
+                                              context,
+                                              habit,
+                                              (id) async {
+                                                if (!mounted) return;
+                                                setState(() {
+                                                  final idx = _habits
+                                                      .indexWhere(
+                                                        (h) => h.gId == id,
+                                                      );
+                                                  if (idx != -1) {
+                                                    _habits.removeAt(idx);
+                                                    _expanded.removeAt(idx);
+                                                    _completedToday.remove(id);
+                                                  }
+                                                });
+                                                _updateProgressBar(
+                                                  _habits.length,
+                                                  _completedToday.length,
+                                                );
+                                              },
+                                            );
+                                          },
+                                        ),
+                                      ],
                                     ),
                                   ],
                                 ),
@@ -516,10 +570,15 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
         width: 80,
         height: 80,
         child: FloatingActionButton(
-          onPressed: () {
-            // Open dialog to get title and details for the habit.
-            // NEED TO GET MORE HABIT DETAILS SUCH AS START/END DATE, RECURRING, ETC.
-            _showCreateHabitDialog();
+          onPressed: () async {
+            await showCreateHabitDialog(context, (habit) async {
+              if (!mounted) return;
+              setState(() {
+                _habits.insert(0, habit);
+                _expanded.insert(0, false);
+              });
+              _updateProgressBar(_habits.length, _completedToday.length);
+            });
           },
           shape: const CircleBorder(),
           child: const Icon(Icons.add, size: 45),

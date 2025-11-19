@@ -3,6 +3,7 @@ import 'package:habit_task_tracker/log.dart';
 import 'package:habit_task_tracker/notifier.dart' as notifier;
 import 'package:duration/duration.dart';
 import 'package:logger/logger.dart';
+import 'package:table_calendar/table_calendar.dart';
 
 enum Frequency { daily, weekly, monthly, yearly, none }
 
@@ -27,6 +28,7 @@ class Habit {
   bool isRecurring;
   Frequency frequency;
   Log log;
+  List<DateTime> completedDates;
   List<notifier.Notification> notifications;
   // Should only be accessed from the main isolate
   // for thread safety
@@ -73,8 +75,10 @@ class Habit {
     required this.frequency,
     this.description,
     required this.notifications,
+    List<DateTime>? completedDates, // optional in constructor
   }) : _id = id,
-       log = createLog(id, description);
+       log = createLog(id, description),
+       completedDates = completedDates ?? [];
   String get gId => _id;
   String get gName => name;
   DateTime get gStartDate => startDate;
@@ -91,6 +95,7 @@ class Habit {
       'endDate': endDate.toIso8601String(),
       'isRecurring': isRecurring,
       'frequency': gFrequency.toString(),
+      'completedDates': completedDates.map((d) => d.toIso8601String()).toList(),
     };
   }
 
@@ -103,6 +108,9 @@ class Habit {
       endDate: DateTime.parse(json['endDate']),
       isRecurring: json['isRecurring'],
       frequency: frequencyMap[json['frequency']] ?? Frequency.none,
+      completedDates: (json['completedDates'] as List<dynamic>?)
+          ?.map((e) => DateTime.parse(e))
+          .toList(),
     )
     // Following line can be uncommented once
     // `withNotification()` is idempotent.
@@ -144,10 +152,17 @@ class Habit {
     return a.isBefore(b) ? a : b;
   }
 
-  void complete() {
-    //updateTimeStamps(DateTime.now());
+  void complete([DateTime? day]) {
+    final d = day ?? DateTime.now();
+    if (!completedDates.any((x) => isSameDay(x, d))) {
+      completedDates.add(d);
+    }
   }
+
+  // void complete() {
+  //updateTimeStamps(DateTime.now());
 }
+// }
 
 Future<void> saveHabit(Habit habit) async {
   await saveData('Habits', habit.gId, habit.toJson());

@@ -40,6 +40,9 @@ dependencies:
   flutter_timezone: ^5.0.1
   duration: ^4.0.3
   logger: ^2.6.2
+  fuzzywuzzy: ^1.2.0
+
+  table_calendar: ^3.0.9
 
 dev_dependencies:
   mockito: ^5.5.1
