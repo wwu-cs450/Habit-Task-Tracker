@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:habit_task_tracker/notifier.dart' as notifier;
-import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'habit.dart';
 import 'main_helpers.dart';
 import 'calendar.dart';
@@ -8,13 +6,8 @@ import 'calendar.dart';
 // I got some help from GitHub CoPilot with this code. I also got some ideas from
 // this youtube video: https://www.youtube.com/watch?v=K4P5DZ9TRns
 
-Future<void> main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-  const MyApp app = MyApp();
-  // Initialize notification service
-  await notifier.Notification.initialize(MyApp.onNotificationPressed);
-
-  runApp(app);
+void main() {
+  runApp(const MyApp());
 }
 
 // Class to provide styling and information for the entire app
@@ -34,13 +27,6 @@ class MyApp extends StatelessWidget {
       ),
       home: const MyHomePage(title: 'Habits'),
     );
-  }
-
-  // Callback for notification pressed while app is running
-  static void onNotificationPressed(NotificationResponse response) {
-    // final String? payload = response.payload;
-    // In future, highlight specific habit based on payload
-    // print('Notification tapped for habit with id: $payload');
   }
 }
 
@@ -102,158 +88,6 @@ class _MyHomePageState extends State<MyHomePage> {
     });
   }
 
-  // THIS SHOULD PROBABLY BE HANDLED IN THE HABIT CLASS AND USED HERE
-  // Create habit method
-  Future<void> createHabit(String title, String description) async {
-    final id = DateTime.now().millisecondsSinceEpoch.toString();
-    final habit = Habit(
-      id: id,
-      name: title,
-      description: description,
-      startDate: DateTime.now(),
-      endDate: DateTime.now().add(const Duration(days: 1)),
-      isRecurring: false,
-    ).withNotification();
-
-    setState(() {
-      _habits.insert(0, habit);
-      _checked.insert(0, false);
-      _expanded.insert(0, false);
-    });
-    // Update progress after adding
-    _updateProgressBar(_habits.length, _checked.where((v) => v).length);
-
-    try {
-      final Map<String, dynamic> m = habit.toJson();
-      m['completed'] = false;
-      await db.collection('data/Habits').doc(id).set(m);
-    } catch (e) {
-      debugPrint('Failed to save habit: $e');
-    }
-  }
-
-  // THIS SHOULD PROBABLY BE HANDLED IN THE HABIT CLASS AND USED HERE
-  // Delete habit method
-  Future<void> deleteHabit(int index) async {
-    if (index < 0 || index >= _checked.length) return;
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Delete item?'),
-        content: const Text('Are you sure you want to delete this item?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('Delete'),
-          ),
-        ],
-      ),
-    );
-    if (confirmed == true) {
-      final habit = _habits[index];
-      setState(() {
-        _habits.removeAt(index);
-        _checked.removeAt(index);
-        _expanded.removeAt(index);
-      });
-
-      // Update progress after deletion
-      _updateProgressBar(_habits.length, _checked.where((v) => v).length);
-
-      // Remove reminder notification for the habit
-      await notifier.Notification.cancel(habit);
-
-      // Remove from the database (currently localstore)
-      try {
-        await db.collection('data/Habits').doc(habit.gId).delete();
-      } catch (e) {
-        debugPrint('Failed to delete habit ${habit.gId}: $e');
-      }
-    }
-  }
-
-  // Show dialog to create a new habit with title and description fields
-  Future<void> _showCreateHabitDialog() async {
-    final titleController = TextEditingController();
-    final descController = TextEditingController();
-
-    final saved = await showDialog<bool>(
-      context: context,
-      barrierDismissible: true,
-      useRootNavigator: true,
-      builder: (context) => AlertDialog(
-        title: const Text('New Habit'),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: titleController,
-                decoration: const InputDecoration(labelText: 'Title'),
-                autofocus: false,
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: descController,
-                decoration: const InputDecoration(labelText: 'Description'),
-                keyboardType: TextInputType.multiline,
-                minLines: 1,
-                maxLines: 3,
-                textAlignVertical: TextAlignVertical.top,
-              ),
-            ],
-          ),
-        ),
-        actions: [
-          // Cancel button
-          TextButton(
-            onPressed: () async {
-              // Unfocus and hide keyboard before closing dialog
-              final navigator = Navigator.of(context, rootNavigator: true);
-              FocusManager.instance.primaryFocus?.unfocus();
-              try {
-                await SystemChannels.textInput.invokeMethod('TextInput.hide');
-              } catch (_) {}
-              await Future.delayed(const Duration(milliseconds: 150));
-              navigator.pop(false);
-            },
-            child: const Text('Cancel'),
-          ),
-          // Save button
-          TextButton(
-            onPressed: () async {
-              // Unfocus and hide keyboard before closing dialog
-              final navigator = Navigator.of(context, rootNavigator: true);
-              FocusManager.instance.primaryFocus?.unfocus();
-              try {
-                await SystemChannels.textInput.invokeMethod('TextInput.hide');
-              } catch (_) {}
-              await Future.delayed(const Duration(milliseconds: 150));
-              navigator.pop(true);
-            },
-            child: const Text('Save'),
-          ),
-        ],
-      ),
-    );
-
-    if (saved == true) {
-      final title = titleController.text.isEmpty
-          ? 'New Habit'
-          : titleController.text.trim();
-      final desc = descController.text.trim();
-      createHabit(title, desc.isEmpty ? 'Description' : desc);
-    }
-
-    titleController.dispose();
-    descController.dispose();
-  }
-
-  // MAIN BODY BUILD METHOD
   // Format DateTime to Date string
   String _format(DateTime d) => d.toIso8601String().split('T').first;
 
