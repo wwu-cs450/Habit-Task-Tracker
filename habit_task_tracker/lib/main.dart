@@ -29,7 +29,7 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(
         // Need to decide what color scheme to use
         colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color.fromARGB(255, 0, 0, 0),
+          seedColor: const Color.fromARGB(255, 255, 255, 255),
         ),
         useMaterial3: true,
       ),
