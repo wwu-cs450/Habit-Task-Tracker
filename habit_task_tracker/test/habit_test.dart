@@ -4,13 +4,12 @@ import 'package:habit_task_tracker/habit.dart';
 void main() {
   group('Habit Model Test', () {
     test('Create Habit Instance', () {
-      final habit = Habit(
+      final habit = Habit.recurring(
         id: 'habit_1',
         name: 'Exercise',
         frequency: Frequency.daily,
         startDate: DateTime(2024, 1, 1),
         endDate: DateTime(2024, 12, 31),
-        isRecurring: false,
       );
 
       expect(habit.gId, 'habit_1');
@@ -19,13 +18,12 @@ void main() {
       expect(habit.gStartDate, DateTime(2024, 1, 1));
     });
     test('Save and Load Habit', () async {
-      Habit? habit = Habit(
+      Habit? habit = Habit.recurring(
         id: 'habit_2',
         name: 'Read Books',
-        frequency: Frequency.daily,
         startDate: DateTime(2024, 2, 2),
         endDate: DateTime(2024, 11, 30),
-        isRecurring: false,
+        frequency: Frequency.daily,
       );
 
       await saveHabit(habit);
@@ -37,22 +35,23 @@ void main() {
       expect(habitLate.gFrequency, Frequency.daily);
       expect(habitLate.gStartDate, DateTime(2024, 2, 2));
       expect(habitLate.gEndDate, DateTime(2024, 11, 30));
-      expect(habitLate.gIsRecurring, false);
+      expect(habitLate.gIsRecurring, true);
     });
 
     test('Habit Frequency Null Test', () async {
-      final habit = Habit(
+      final habit = Habit.recurring(
         id: 'habit_3',
         name: 'Run Marathon',
         startDate: DateTime(2024, 3, 3),
         endDate: DateTime(2024, 10, 31),
+        frequency: Frequency.none,
         isRecurring: true,
       );
       expect(habit.gFrequency, Frequency.none);
     });
 
     test('Habit toJson and fromJson Test', () {
-      final habit = Habit(
+      final habit = Habit.recurring(
         id: 'habit_4',
         name: 'Meditate',
         description: 'Daily meditation for 10 minutes',
@@ -82,12 +81,11 @@ void main() {
     });
 
     test('Delete Habit Test', () async {
-      final habit = Habit(
+      final habit = Habit.oneTime(
         id: 'habit_8',
         name: 'Habit to Delete',
         startDate: DateTime(2024, 5, 5),
         endDate: DateTime(2024, 10, 5),
-        isRecurring: false,
       );
 
       await saveHabit(habit);
@@ -104,7 +102,7 @@ void main() {
       expect(loadedHabit, isNull);
     });
     test('Correct creation of Log', () {
-      final habit = Habit(
+      final habit = Habit.recurring(
         id: 'habit_8',
         name: 'Test Habit for Log',
         startDate: DateTime(2024, 5, 5),
@@ -116,6 +114,62 @@ void main() {
       expect(habit.log.gId, equals(habit.gId));
       expect(habit.log.timeStamps, isEmpty);
       expect(habit.log.notes, isNull);
+    });
+
+    test('Change Habit name, discription, and dates', () async {
+      final habit = Habit.oneTime(
+        id: 'habit_9',
+        name: 'Initial Name',
+        description: 'Initial Description',
+        startDate: DateTime(2024, 6, 1),
+        endDate: DateTime(2024, 12, 1),
+      );
+
+      await saveHabit(habit);
+
+      await changeHabit(
+        'habit_9',
+        name: 'Modified Name',
+        description: 'Modified Description',
+        startDate: DateTime(2024, 7, 1),
+        endDate: DateTime(2024, 11, 1),
+      );
+
+      final loadedHabit = await loadHabit('habit_9');
+      expect(loadedHabit.gName, 'Modified Name');
+      expect(loadedHabit.description, 'Modified Description');
+      expect(loadedHabit.gStartDate, DateTime(2024, 7, 1));
+      expect(loadedHabit.gEndDate, DateTime(2024, 11, 1));
+    });
+
+    test('Add intervals to habit', () async {
+      final habit = Habit.recurring(
+        id: 'habit_10',
+        name: 'Interval Habit',
+        startDate: DateTime(2024, 8, 1),
+        endDate: DateTime(2024, 12, 31),
+        isRecurring: true,
+        frequency: Frequency.weekly,
+        intervals: [
+          DateTime(2024, 8, 1),
+          DateTime(2024, 8, 3),
+          DateTime(2024, 8, 5),
+        ],
+      );
+
+      await saveHabit(habit);
+
+      final loadedHabit = await loadHabit('habit_10');
+      expect(loadedHabit.gFrequency, Frequency.weekly);
+      expect(loadedHabit.intervals!.length, 3);
+      expect(
+        loadedHabit.intervals,
+        containsAll([
+          DateTime(2024, 8, 1),
+          DateTime(2024, 8, 3),
+          DateTime(2024, 8, 5),
+        ]),
+      );
     });
   });
 }
