@@ -1,5 +1,7 @@
 # Habit Task Tracker
 
+[![Lint and Test](https://github.com/wwu-cs450/Habit-Task-Tracker/actions/workflows/lint_and_test.yaml/badge.svg)](https://github.com/wwu-cs450/Habit-Task-Tracker/actions/workflows/lint_and_test.yaml)  
+
 A Habit and Task tracking application built as the CS 450 course project for Walla Walla University.
 
 ## Features

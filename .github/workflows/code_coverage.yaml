@@ -1,4 +1,4 @@
-name: Create code coverage report
+name: Code coverage
 
 on:
   workflow_dispatch:
