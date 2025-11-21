@@ -21,21 +21,12 @@ jobs:
 
       # Installs dependencies
       - name: Install dependencies
-        run: sudo apt-get update && sudo apt-get install -y lcov
-
-      # Fetches proj dependencies from pub
-      - name: Install dependencies
-        run: flutter pub get
+        run: sudo apt-get update && sudo apt-get install -y lcov && flutter pub get
         working-directory: habit_task_tracker
 
       # Runs unit test, generate coverage data
-      - name: Run tests
+      - name: Generate coverage data
         run: flutter test --coverage
-        working-directory: habit_task_tracker
-
-      # Generate lcov report
-      - name: Generate lcov report
-        run: genhtml coverage/lcov.info -o coverage/html
         working-directory: habit_task_tracker
 
       # Upload code coverage report
@@ -44,6 +35,5 @@ jobs:
         with:
           files: habit_task_tracker/coverage/lcov.info
           flags: unittests
-          fail_ci_if_error: true
         env:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
