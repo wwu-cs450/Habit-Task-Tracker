@@ -185,34 +185,116 @@ Future<void> changeHabit(
 }
 
 Future<List<DateTime>> getHabitDates(String id, DateTime limit) async {
+
   Habit habit = await loadHabit(id);
+  if (habit.isRecurring == false) {
+    return [habit.startDate];
+  }
   List<DateTime> dates = [];
-  DateTime currentDate = habit.startDate;
+  bool end = true;
+  int totalDays = 0;
+  int totalMonths = 0;
+  int totalYears = 0;
 
-  while ((currentDate.isBefore(limit) || currentDate.isAtSameMomentAs(limit)) && (currentDate.isBefore(habit.endDate) || currentDate.isAtSameMomentAs(habit.endDate))) {
-    dates.add(currentDate);
-
-    switch (habit.gFrequency) {
+while (end) {
+    switch (habit.frequency) {
       case Frequency.daily:
-        for (DateTime date in habit.intervals) {
-          if (date.day == currentDate.day) {
-            dates.add(currentDate);
+        for (DateTime date in habit.intervals!) {
+          DateTime nextDate = DateTime(
+            habit.startDate.year,
+            habit.startDate.month,
+            habit.startDate.day,
+            date.hour,
+            date.minute,
+          );
+          nextDate = nextDate.add(Duration(days: totalDays));
+          if (nextDate.isAfter(habit.endDate) || nextDate.isAfter(limit)) {
+            end = false;
+            break;
           }
+          dates.add(nextDate);
         }
+        totalDays += 1;
         break;
       case Frequency.weekly:
-        currentDate = currentDate.add(Duration(days: 7));
+        for (DateTime date in habit.intervals!) {
+          DateTime nextDate = DateTime(
+            habit.startDate.year,
+            habit.startDate.month,
+            date.day,
+            date.hour,
+            date.minute,
+          );
+          nextDate = nextDate.add(Duration(days: totalDays));
+          if (nextDate.isAfter(habit.endDate) || nextDate.isAfter(limit)) {
+            end = false;
+            break;
+          }
+          dates.add(nextDate);
+        }
+        totalDays += 7;
         break;
       case Frequency.monthly:
-        currentDate = DateTime(currentDate.year, currentDate.month + 1, currentDate.day);
+        for (DateTime date in habit.intervals!) {
+          DateTime nextDate = DateTime(
+            habit.startDate.year,
+            habit.startDate.month,
+            date.day,
+            date.hour,
+            date.minute,
+          );
+          var month = nextDate.month;
+          var year = nextDate.year;
+          if (month == 12) {
+            month = 1;
+            year += 1;
+          } else {
+            month += totalMonths;
+          }
+          nextDate = DateTime(
+            year,
+            month,
+            nextDate.day,
+            nextDate.hour,
+            nextDate.minute,
+          );
+          if (nextDate.isAfter(habit.endDate) || nextDate.isAfter(limit)) {
+            end = false;
+            break;
+          }
+          dates.add(nextDate);
+        }
+        totalMonths += 1;
         break;
       case Frequency.yearly:
-        currentDate = DateTime(currentDate.year + 1, currentDate.month, currentDate.day);
+        for (DateTime date in habit.intervals!) {
+          DateTime nextDate = DateTime(
+            habit.startDate.year,
+            date.month,
+            date.day,
+            date.hour,
+            date.minute,
+          );
+          nextDate = DateTime(
+            nextDate.year + totalYears,
+            nextDate.month,
+            nextDate.day,
+            nextDate.hour,
+            nextDate.minute,
+          );
+          if (nextDate.isAfter(habit.endDate) || nextDate.isAfter(limit)) {
+            end = false;
+            break;
+          }
+          dates.add(nextDate);
+        }
+        totalYears += 1;
         break;
       default:
-        return dates;
+        break;
     }
-  }
-  
+    
+
+  } 
   return dates;
 }

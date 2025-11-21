@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:habit_task_tracker/habit.dart';
 
@@ -171,5 +173,143 @@ void main() {
         ]),
       );
     });
+    test ("Get habits from habit (daily)", () async {
+      final habit = Habit.recurring(
+        id: 'habit_12',
+        name: 'Recurring Habit',
+        startDate: DateTime(2024, 10, 1),
+        endDate: DateTime(2024, 10, 10),
+        isRecurring: true,
+        frequency: Frequency.daily,
+        intervals: [
+          DateTime(2024, 10, 1, 8, 0, 0),
+          DateTime(2024, 10, 1, 20, 0, 0),
+        ],
+      );
+
+      await saveHabit(habit);
+
+      final habitDates = await getHabitDates('habit_12', DateTime(2024, 10, 5, 23, 59, 59));
+      expect(habitDates.length, 10);
+      expect(habitDates, containsAll([
+        DateTime(2024, 10, 1, 8, 0, 0),
+        DateTime(2024, 10, 1, 20, 0, 0),
+        DateTime(2024, 10, 2, 8, 0, 0),
+        DateTime(2024, 10, 2, 20, 0, 0),
+        DateTime(2024, 10, 3, 8, 0, 0),
+        DateTime(2024, 10, 3, 20, 0, 0),
+        DateTime(2024, 10, 4, 8, 0, 0),
+        DateTime(2024, 10, 4, 20, 0, 0),
+        DateTime(2024, 10, 5, 8, 0, 0),
+        DateTime(2024, 10, 5, 20, 0, 0),
+      ]));
+    });
+
+    test("Get habits from habit (weekly)", () async {
+      final habit = Habit.recurring(
+        id: 'habit_11',
+        name: 'Weekly Habit',
+        startDate: DateTime(2024, 9, 1),
+        endDate: DateTime(2024, 9, 30),
+        isRecurring: true,
+        frequency: Frequency.weekly,
+        intervals: [
+          DateTime(2024, 9, 1),
+          DateTime(2025, 9, 3),
+        ],
+      );
+
+      await saveHabit(habit);
+
+      final habitDates = await getHabitDates('habit_11', DateTime(2024, 9, 25));
+      expect(habitDates.length, 8);
+      expect(habitDates, containsAll([
+        DateTime(2024, 9, 1),
+        DateTime(2024, 9, 3),
+        DateTime(2024, 9, 8),
+        DateTime(2024, 9, 10),
+        DateTime(2024, 9, 15),
+        DateTime(2024, 9, 17),
+        DateTime(2024, 9, 22),
+        DateTime(2024, 9, 24),
+      ]));
+    });
+    test ("Get habits from habit (non-recurring)", () async {
+      final habit = Habit.oneTime(
+        id: 'habit_13',
+        name: 'One-time Habit',
+        startDate: DateTime(2024, 11, 15),
+        endDate: DateTime(2024, 11, 15),
+      );
+
+      await saveHabit(habit);
+
+      final habitDates = await getHabitDates('habit_13', DateTime(2024, 12, 1));
+      expect(habitDates.length, 1);
+      expect(habitDates, containsAll([
+        DateTime(2024, 11, 15),
+      ]));
+    });
+
+    test("Get habits from habit (monthly)", () async {
+      final habit = Habit.recurring(
+        id: 'habit_14',
+        name: 'Monthly Habit',
+        startDate: DateTime(2024, 1, 15),
+        endDate: DateTime(2024, 6, 15),
+        isRecurring: true,
+        frequency: Frequency.monthly,
+        intervals: [
+          DateTime(2024, 1, 15),
+          DateTime(2024, 1, 30),
+        ],
+      );
+
+      await saveHabit(habit);
+
+      final habitDates = await getHabitDates('habit_14', DateTime(2024, 6, 30));
+      expect(habitDates.length, 11);
+      expect(habitDates, containsAll([
+        DateTime(2024, 1, 15),
+        DateTime(2024, 1, 30),
+        DateTime(2024, 2, 15),
+        DateTime(2024, 2, 29),
+        DateTime(2024, 3, 15),
+        DateTime(2024, 3, 30),
+        DateTime(2024, 4, 15),
+        DateTime(2024, 4, 30),
+        DateTime(2024, 5, 15),
+        DateTime(2024, 5, 30),
+        DateTime(2024, 6, 15),
+       
+      ]));
+    });
+
+    test("Get habits from habit (yearly)", () async {
+      final habit = Habit.recurring(
+        id: 'habit_15',
+        name: 'Yearly Habit',
+        startDate: DateTime(2020, 2, 29),
+        endDate: DateTime(2024, 2, 29),
+        isRecurring: true,
+        frequency: Frequency.yearly,
+        intervals: [
+          DateTime(2020, 2, 29),
+        ],
+      );
+
+      await saveHabit(habit);
+
+      final habitDates = await getHabitDates('habit_15', DateTime(2024, 12, 31));
+      expect(habitDates.length, 5);
+      expect(habitDates, containsAll([
+        DateTime(2020, 2, 29),
+        DateTime(2021, 3, 01),
+        DateTime(2022, 3, 01),
+        DateTime(2023, 3, 01),
+        DateTime(2024, 2, 29),
+      ]));
+    });
+
   });
 }
