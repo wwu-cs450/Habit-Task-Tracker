@@ -22,7 +22,7 @@ jobs:
 
       # Fetches proj dependencies from pub
       - name: Install dependencies
-        run: sudo apt-get update && sudo apt-get install -y lcov && flutter pub get
+        run: flutter pub get
         working-directory: habit_task_tracker
 
       # Lint Dart code
