@@ -1,4 +1,4 @@
-name: Lint and Test
+name: Tests
 
 # Run on push or PR to main branch
 on:
@@ -37,7 +37,14 @@ jobs:
         # --fatal-warnings stops execution if any warnings are found
         working-directory: habit_task_tracker
 
-      # Runs unit test
+      # Run unit tests and generate coverage data
       - name: Run tests
-        run: flutter test
+        run: flutter test --coverage
         working-directory: habit_task_tracker
+
+      # Upload code coverage report. No token needed for public repos
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v5
+        with:
+          files: habit_task_tracker/coverage/lcov.info
+          flags: unittests
