@@ -1,8 +1,8 @@
 # Habit Task Tracker
 
-[![Lint and Test](https://github.com/wwu-cs450/Habit-Task-Tracker/actions/workflows/lint_and_test.yaml/badge.svg)](https://github.com/wwu-cs450/Habit-Task-Tracker/actions/workflows/lint_and_test.yaml) [![codecov](https://codecov.io/gh/wwu-cs450/Habit-Task-Tracker/branch/main/graph/badge.svg)](https://codecov.io/gh/wwu-cs450/Habit-Task-Tracker/branch/main)
+[![Lint and Test](https://github.com/wwu-cs450/Habit-Task-Tracker/actions/workflows/tests.yaml/badge.svg)](https://github.com/wwu-cs450/Habit-Task-Tracker/actions/workflows/tests.yaml) [![codecov](https://codecov.io/gh/wwu-cs450/Habit-Task-Tracker/branch/main/graph/badge.svg)](https://codecov.io/gh/wwu-cs450/Habit-Task-Tracker/branch/main)
 
-(Coverage reported is for main branch)
+(Coverage reported is for main branch. To view coverage for other branches, visit [codecov.io](https://codecov.io/gh/wwu-cs450/Habit-Task-Tracker) or view the pull request for that branch.)
 
 A Habit and Task tracking application built as the CS 450 course project for Walla Walla University.
 
