@@ -29,11 +29,9 @@ jobs:
         run: flutter test --coverage
         working-directory: habit_task_tracker
 
-      # Upload code coverage report
+      # Upload code coverage report. No token needed for public repos
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v5
         with:
           files: habit_task_tracker/coverage/lcov.info
           flags: unittests
-        env:
-          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
