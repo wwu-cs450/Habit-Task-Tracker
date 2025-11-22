@@ -1,9 +1,6 @@
-import 'dart:math';
-
-import 'package:flutter/foundation.dart';
 import 'package:habit_task_tracker/backend.dart';
 import 'package:habit_task_tracker/log.dart';
-import 'package:habit_task_tracker/frequency.dart';
+import 'package:jiffy/jiffy.dart';
 
 enum Frequency { daily, weekly, monthly, yearly, none }
 
@@ -243,21 +240,7 @@ while (end) {
             date.hour,
             date.minute,
           );
-          var month = nextDate.month;
-          var year = nextDate.year;
-          if (month == 12) {
-            month = 1;
-            year += 1;
-          } else {
-            month += totalMonths;
-          }
-          nextDate = DateTime(
-            year,
-            month,
-            nextDate.day,
-            nextDate.hour,
-            nextDate.minute,
-          );
+          nextDate = Jiffy.parseFromDateTime(nextDate).add(months: totalMonths).dateTime;
           if (nextDate.isAfter(habit.endDate) || nextDate.isAfter(limit)) {
             end = false;
             break;
@@ -275,13 +258,7 @@ while (end) {
             date.hour,
             date.minute,
           );
-          nextDate = DateTime(
-            nextDate.year + totalYears,
-            nextDate.month,
-            nextDate.day,
-            nextDate.hour,
-            nextDate.minute,
-          );
+          nextDate = Jiffy.parseFromDateTime(nextDate).add(years: totalYears).dateTime;
           if (nextDate.isAfter(habit.endDate) || nextDate.isAfter(limit)) {
             end = false;
             break;

@@ -304,9 +304,9 @@ void main() {
       expect(habitDates.length, 5);
       expect(habitDates, containsAll([
         DateTime(2020, 2, 29),
-        DateTime(2021, 3, 01),
-        DateTime(2022, 3, 01),
-        DateTime(2023, 3, 01),
+        DateTime(2021, 2, 28),
+        DateTime(2022, 2, 28),
+        DateTime(2023, 2, 28),
         DateTime(2024, 2, 29),
       ]));
     });
