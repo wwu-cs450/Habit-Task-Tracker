@@ -1,21 +1,14 @@
 import 'package:flutter/material.dart';
-import 'package:habit_task_tracker/notifier.dart' as notifier;
-import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'habit.dart';
 import 'main_helpers.dart';
+import 'search.dart';
 import 'calendar.dart';
 
 // I got some help from GitHub CoPilot with this code. I also got some ideas from
 // this youtube video: https://www.youtube.com/watch?v=K4P5DZ9TRns
 
-Future<void> main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-
-  const MyApp app = MyApp();
-
-  await notifier.Notification.initialize(MyApp.onNotificationPressed);
-
-  runApp(app);
+void main() {
+  runApp(const MyApp());
 }
 
 // Class to provide styling and information for the entire app
@@ -29,18 +22,12 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(
         // Need to decide what color scheme to use
         colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color.fromARGB(255, 255, 255, 255),
+          seedColor: const Color.fromARGB(255, 0, 0, 0),
         ),
         useMaterial3: true,
       ),
       home: const MyHomePage(title: 'Habits'),
     );
-  }
-
-  static void onNotificationPressed(NotificationResponse response) {
-    // final String? payload = response.payload;
-    // In future, highlight specific habit based on payload
-    // print('Notification tapped for habit with id: $payload');
   }
 }
 
@@ -154,18 +141,15 @@ class _MyHomePageState extends State<MyHomePage> {
                   Navigator.pop(context);
                 },
               ),
-
+              // Navigate to Calendar Page
               ListTile(
                 leading: const Icon(Icons.calendar_today),
                 title: const Text('Calendar'),
                 onTap: () {
-                  debugPrint('Calendar tapped');
                   Navigator.pop(context);
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => CalendarPage(habits: _habits),
-                    ),
+                  Navigator.pushReplacement(
+                    context, 
+                    MaterialPageRoute(builder: (context) => CalendarPage(habits: _habits)),
                   );
                 },
               ),
@@ -179,6 +163,80 @@ class _MyHomePageState extends State<MyHomePage> {
         padding: const EdgeInsets.all(16.0),
         child: Column(
           children: [
+            // Search Bar
+            SizedBox(
+              height: 44,
+              child: TextField(
+                decoration: InputDecoration(
+                  hintText: 'Search Habits',
+                  prefixIcon: const Icon(Icons.search, size: 20),
+                  isDense: true,
+                  contentPadding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+                  fillColor: Colors.grey.shade100,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide.none,
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                onChanged: (value) async {
+                  final trimmedValue = value.trim();
+
+                  if (trimmedValue.isEmpty) {
+                    try {
+                      final result = await loadHabitsFromDb();
+                      if (!mounted) return;
+                      final List<Habit> habits =
+                          (result['habits'] as List<dynamic>).cast<Habit>();
+                      final Set<String> completed =
+                          (result['completedIds'] as Set<dynamic>).cast<String>();
+                      setState(() {
+                        _habits = habits;
+                        _completedToday
+                          ..clear()
+                          ..addAll(completed);
+                        _expanded
+                          ..clear()
+                          ..addAll(List<bool>.filled(_habits.length, false));
+                      });
+                      _updateProgressBar(_habits.length, _completedToday.length);
+                    } catch (e) {
+                      debugPrint('Search reload failed: $e');
+                    }
+                    return;
+                  }
+
+                  try {
+                    final results = await searchHabits(name: trimmedValue);
+                    if (!mounted) return;
+
+                    final Set<String> completedMatches = results
+                        .where((h) => _completedToday.contains(h.gId))
+                        .map((h) => h.gId)
+                        .toSet();
+
+                    setState(() {
+                      _habits = results;
+                      _expanded
+                        ..clear()
+                        ..addAll(List<bool>.filled(_habits.length, false));
+                      _completedToday
+                        ..clear()
+                        ..addAll(completedMatches);
+                    });
+                    _updateProgressBar(_habits.length, _completedToday.length);
+                  } catch (e) {
+                    debugPrint('Search failed: $e');
+                  }
+                },
+                style: const TextStyle(fontSize: 14),
+              ),
+            ),
             // Progress Bar
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 8.0),
