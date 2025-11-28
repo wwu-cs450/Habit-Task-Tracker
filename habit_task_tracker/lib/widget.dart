@@ -3,6 +3,7 @@
 import 'package:home_widget/home_widget.dart';
 import 'package:flutter/material.dart';
 
+@pragma('vm:entry-point')
 class WidgetService {
   /// iOS
   static const iOSWidgetAppGroupId = 'group.com.example.habitTaskTrackerGroup';
@@ -17,7 +18,7 @@ class WidgetService {
   /// Called in main.dart
   static Future<void> initialize() async {
     await HomeWidget.setAppGroupId(iOSWidgetAppGroupId);
-    HomeWidget.registerInteractivityCallback(interactiveCallback);
+    await HomeWidget.registerInteractivityCallback(interactiveCallback);
   }
 
   /// Save data to Shared Preferences
@@ -56,6 +57,7 @@ class WidgetService {
   @pragma('vm:entry-point')
   static Future<void> interactiveCallback(Uri? uri) async {
     // We check the host of the uri to determine which action should be triggered.
+    debugPrint('[WidgetService.interactiveCallback] uri: $uri');
     if (uri?.host == 'complete') {
       await _complete();
     } else if (uri?.host == 'uncomplete') {

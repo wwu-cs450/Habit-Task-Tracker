@@ -9,9 +9,12 @@ import AppIntents
 import Foundation
 import home_widget
 
-@available(iOS 17, *)
+
+@available(iOS 26, *)
 public struct BackgroundIntent: AppIntent {
     static public var title: LocalizedStringResource = "Complete Task"
+    
+    static public var supportedModes: IntentModes = [.background]
     
     @Parameter(title: "Method")
     var method: String

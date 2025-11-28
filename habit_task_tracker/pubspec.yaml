@@ -46,6 +46,8 @@ dependencies:
 
   home_widget: ^0.8.1
 
+  workmanager: ^0.9.0+3
+
 dev_dependencies:
   mockito: ^5.5.1
   plugin_platform_interface: ^2.1.8
