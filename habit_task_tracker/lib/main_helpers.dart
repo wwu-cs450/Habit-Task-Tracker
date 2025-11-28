@@ -133,8 +133,7 @@ Future<Habit> createAndPersistHabit(
     frequency: effectiveFrequency,
   ).withNotification();
 
-  final Map<String, dynamic> m = habit.toJson();
-  await db.collection('data/Habits').doc(habit.gId).set(m);
+  await saveHabit(habit);
   return habit;
 }
 

@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:habit_task_tracker/backend.dart';
 import 'package:habit_task_tracker/log.dart';
 import 'package:habit_task_tracker/notifier.dart' as notifier;
@@ -104,8 +105,18 @@ class Habit {
   }
 
   factory Habit.fromJson(Map<String, dynamic> json) {
+    // check to see if the id is a valid UUID,
+    // if not, generate a new one
+    Uuid id;
+    try {
+      id = Uuid.fromString(json['id'] as String);
+    } catch (e) {
+      // this allows us to convert our old ID system to the new one
+      debugPrint('Invalid UUID format: ${json['id']}, generating new UUID');
+      id = Uuid.generate();
+    }
     return Habit(
-      id: json['id'] as String?,
+      id: id.toString(),
       name: json['name'] as String,
       description: json['description'] as String?,
       startDate: DateTime.parse(json['startDate'] as String),
