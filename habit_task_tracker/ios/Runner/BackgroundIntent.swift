@@ -16,17 +16,22 @@ public struct BackgroundIntent: AppIntent {
     @Parameter(title: "Method")
     var method: String
     
+    @Parameter(title: "ID")
+    var id: String
+    
     public init() {
         method = "complete"
+        id = "none"
     }
     
-    public init(method: String) {
+    public init(method: String, id: UUID) {
         self.method = method
+        self.id = id.uuidString
     }
     
     public func perform() async throws -> some IntentResult {
         await HomeWidgetBackgroundWorker.run(
-          url: URL(string: "habitWidget://\(method)"),
+          url: URL(string: "habitWidget://\(method)?id=\(id)"),
           appGroup: "group.com.example.habitTaskTrackerGroup")
 
         return .result()

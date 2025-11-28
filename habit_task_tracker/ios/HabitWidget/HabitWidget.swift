@@ -7,30 +7,27 @@
 
 import WidgetKit
 import SwiftUI
+import AppIntents
 
 struct Provider: TimelineProvider {
-    func placeholder(in context: Context) -> SimpleEntry {
-        SimpleEntry(date: Date(), emoji: "😀")
+    func placeholder(in context: Context) -> HabitWidgetEntry {
+        HabitWidgetEntry.preview
     }
 
-    func getSnapshot(in context: Context, completion: @escaping (SimpleEntry) -> ()) {
-        let entry = SimpleEntry(date: Date(), emoji: "😀")
-        completion(entry)
+    func getSnapshot(in context: Context, completion: @escaping (HabitWidgetEntry) -> ()) {
+        if context.isPreview {
+            return completion(HabitWidgetEntry.preview)
+        }
+        
+        completion(HabitWidgetEntry.current)
     }
 
     func getTimeline(in context: Context, completion: @escaping (Timeline<Entry>) -> ()) {
-        var entries: [SimpleEntry] = []
-
-        // Generate a timeline consisting of five entries an hour apart, starting from the current date.
-        let currentDate = Date()
-        for hourOffset in 0 ..< 5 {
-            let entryDate = Calendar.current.date(byAdding: .hour, value: hourOffset, to: currentDate)!
-            let entry = SimpleEntry(date: entryDate, emoji: "😀")
-            entries.append(entry)
+        if context.isPreview {
+            return completion( Timeline(entries: [HabitWidgetEntry.preview], policy: .never))
         }
-
-        let timeline = Timeline(entries: entries, policy: .atEnd)
-        completion(timeline)
+        
+        completion(Timeline(entries: [HabitWidgetEntry.current], policy: .never))
     }
 
 //    func relevances() async -> WidgetRelevances<Void> {
@@ -38,9 +35,48 @@ struct Provider: TimelineProvider {
 //    }
 }
 
-struct SimpleEntry: TimelineEntry {
+struct HabitWidgetEntry: TimelineEntry {
     let date: Date
-    let emoji: String
+    
+    let tasks: [HabitTask]
+    
+    static var preview: HabitWidgetEntry {
+        let demoTasks: [HabitTask] = [
+            .init(id: .init(), name: "Clean the Toilet"),
+            .init(id: .init(), name: "Brush Teeth"),
+            .init(id: .init(), name: "Make Bed"),
+        ]
+        return HabitWidgetEntry(date: .now, tasks: demoTasks)
+    }
+    
+    static var current: HabitWidgetEntry {
+        let tasks: [HabitTask] = [
+            .init(id: .init(), name: "Clean the Toilet"),
+            .init(id: .init(), name: "Brush Teeth"),
+            .init(id: .init(), name: "Make Bed"),
+        ]
+        
+        return HabitWidgetEntry(date: .now, tasks: tasks)
+    }
+}
+
+struct CheckToggleStyle: ToggleStyle {
+ func makeBody(configuration: Configuration) -> some View {
+  Button {
+   configuration.isOn.toggle()
+  } label: {
+   Label {
+    configuration.label
+     .strikethrough(configuration.isOn, color: .accentColor)
+   } icon: {
+    Image(systemName: configuration.isOn ? "checkmark.circle.fill" : "circle")
+           .foregroundStyle(.red)
+     .accessibility(label: Text(configuration.isOn ? "Checked" : "Unchecked"))
+     .imageScale(.large)
+   }
+  }
+  .buttonStyle(.plain)
+ }
 }
 
 struct HabitWidgetEntryView : View {
@@ -53,8 +89,18 @@ struct HabitWidgetEntryView : View {
                     .font(.largeTitle)
                     .padding(.bottom, 10)
                 Spacer()
+                Text(entry.tasks.count, format: .number)
+                     .font(.title)
             }
-        }
+            ForEach(entry.tasks.prefix(7), id: \.id) {task in
+                Toggle(isOn: task.isDone, intent: BackgroundIntent(method: "complete", id: task.id)) {
+                    Text(task.name)
+                        .lineLimit(1)
+                }
+                .toggleStyle(CheckToggleStyle())
+                .frame(maxHeight: 30, alignment: .leading)
+            }
+        }.frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
     }
 }
 
@@ -74,12 +120,12 @@ struct HabitWidget: Widget {
         }
         .configurationDisplayName("My Widget")
         .description("This is an example widget.")
+        .supportedFamilies([.systemLarge])
     }
 }
 
 #Preview(as: .systemLarge) {
     HabitWidget()
 } timeline: {
-    SimpleEntry(date: .now, emoji: "😀")
-    SimpleEntry(date: .now, emoji: "🤩")
+    HabitWidgetEntry.preview
 }
