@@ -44,6 +44,8 @@ dependencies:
 
   table_calendar: ^3.0.9
 
+  home_widget: ^0.8.1
+
 dev_dependencies:
   mockito: ^5.5.1
   plugin_platform_interface: ^2.1.8

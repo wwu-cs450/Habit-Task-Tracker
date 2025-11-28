@@ -4,6 +4,7 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'habit.dart';
 import 'main_helpers.dart';
 import 'calendar.dart';
+import 'widget.dart';
 
 // I got some help from GitHub CoPilot with this code. I also got some ideas from
 // this youtube video: https://www.youtube.com/watch?v=K4P5DZ9TRns
@@ -14,6 +15,8 @@ Future<void> main() async {
   const MyApp app = MyApp();
 
   await notifier.Notification.initialize(MyApp.onNotificationPressed);
+
+  await WidgetService.initialize();
 
   runApp(app);
 }
@@ -55,7 +58,7 @@ class MyHomePage extends StatefulWidget {
 }
 
 // Main state class for the home page
-class _MyHomePageState extends State<MyHomePage> {
+class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
   // Create list to store habits
   List<Habit> _habits = <Habit>[];
   // Track which habit IDs have a log timestamp for today.
@@ -69,6 +72,7 @@ class _MyHomePageState extends State<MyHomePage> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     // Load habits from the database and save it to the UI state
     loadHabitsFromDb()
         .then((result) {
@@ -91,6 +95,18 @@ class _MyHomePageState extends State<MyHomePage> {
         .catchError((e) {
           debugPrint('Error loading habits: $e');
         });
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+    debugPrint('AppLifecycleState: $state');
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
   }
 
   // Method for updating the Progress Bar
