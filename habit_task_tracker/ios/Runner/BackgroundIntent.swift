@@ -14,7 +14,7 @@ import home_widget
 public struct BackgroundIntent: AppIntent {
     static public var title: LocalizedStringResource = "Complete Task"
     
-    static public var supportedModes: IntentModes = [.background]
+    static public var supportedModes: IntentModes = [.foreground]
     
     @Parameter(title: "Method")
     var method: String
