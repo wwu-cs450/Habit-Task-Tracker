@@ -137,6 +137,10 @@ Future<Habit> createAndPersistHabit(
     habit.addRecurrence(effectiveFrequency);
   }
 
+  if (isRecurring) {
+    habit.addRecurrence(effectiveFrequency);
+  }
+
   final Map<String, dynamic> m = habit.toJson();
   await db.collection('data/Habits').doc(habit.gId).set(m);
   return habit;
