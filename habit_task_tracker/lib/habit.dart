@@ -171,6 +171,9 @@ Future<void> saveHabit(Habit habit) async {
 
 Future<Habit> loadHabit(String id) async {
   var data = await loadData('Habits', id);
+  if (data == null) {
+    throw Exception('Habit with id $id not found');
+  }
   return Habit.fromJson(data);
 }
 

@@ -27,9 +27,9 @@ public struct BackgroundIntent: AppIntent {
         id = "none"
     }
     
-    public init(method: String, id: UUID) {
+    public init(method: String, id: String) {
         self.method = method
-        self.id = id.uuidString
+        self.id = id
     }
     
     public func perform() async throws -> some IntentResult {

@@ -9,9 +9,9 @@
 import Foundation
 
 struct HabitTask: Identifiable, Codable {
-    let id: UUID
+    let id: String
     
     let name: String
     
-    private(set) var isDone: Bool = false
+    private(set) var isCompleted: Bool = false
 }

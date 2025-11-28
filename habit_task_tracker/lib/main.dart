@@ -91,6 +91,11 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
             }
           });
           _updateProgressBar(_habits.length, _completedToday.length);
+
+          // Sync habits to widget after initial load
+          WidgetService.syncHabitsToWidget().catchError((e) {
+            debugPrint('Error syncing habits to widget: $e');
+          });
         })
         .catchError((e) {
           debugPrint('Error loading habits: $e');
@@ -101,6 +106,18 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
   void didChangeAppLifecycleState(AppLifecycleState state) {
     super.didChangeAppLifecycleState(state);
     debugPrint('AppLifecycleState: $state');
+
+    // Sync habit data to widget when app comes to foreground
+    if (state == AppLifecycleState.resumed) {
+      WidgetService.syncHabitsToWidget().catchError((e) {
+        debugPrint('Error syncing habits to widget: $e');
+      });
+    } else if (state == AppLifecycleState.paused) {
+      // Sync habit data to widget when app goes to background
+      WidgetService.syncHabitsToWidget().catchError((e) {
+        debugPrint('Error syncing habits to widget: $e');
+      });
+    }
   }
 
   @override
@@ -270,7 +287,15 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
                                     habit.description,
                                   );
 
-                                  if (!ok) {
+                                  if (ok) {
+                                    // Sync widget after successful completion change
+                                    WidgetService.syncHabitsToWidget()
+                                        .catchError((e) {
+                                          debugPrint(
+                                            'Error syncing habits to widget: $e',
+                                          );
+                                        });
+                                  } else {
                                     // rollback UI on failure
                                     if (!mounted) return;
                                     setState(() {
@@ -442,6 +467,11 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
                 _expanded.insert(0, false);
               });
               _updateProgressBar(_habits.length, _completedToday.length);
+
+              // Sync widget after creating new habit
+              WidgetService.syncHabitsToWidget().catchError((e) {
+                debugPrint('Error syncing habits to widget: $e');
+              });
             });
           },
           shape: const CircleBorder(),

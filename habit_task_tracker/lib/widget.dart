@@ -1,7 +1,12 @@
 // taken from https://ejolie.hashnode.dev/developing-ios-android-home-screen-widgets-in-flutter
 
+import 'dart:convert';
+
 import 'package:home_widget/home_widget.dart';
 import 'package:flutter/material.dart';
+import 'habit.dart';
+import 'log.dart';
+import 'main_helpers.dart' show loadHabitsFromDb, setCompletion, isSameDay;
 
 @pragma('vm:entry-point')
 class WidgetService {
@@ -23,12 +28,9 @@ class WidgetService {
 
   /// Save data to Shared Preferences
   static Future<void> _saveData<T>(String key, T data) async {
-    await HomeWidget.saveWidgetData<T>(key, data);
-  }
-
-  /// Retrieve data from Shared Preferences
-  static Future<T?> _getData<T>(String key) async {
-    return await HomeWidget.getWidgetData<T>(key);
+    // convert data to json
+    final json = jsonEncode(data);
+    await HomeWidget.saveWidgetData<String>(key, json.toString());
   }
 
   /// Request to update widgets on both iOS and Android
@@ -46,12 +48,97 @@ class WidgetService {
     );
   }
 
-  static Future<void> _complete() async {
-    debugPrint('[WidgetService.complete]');
+  static Future<void> _complete(String habitId) async {
+    // find habit by id
+    final habit = await loadHabit(habitId);
+
+    if (habit.gCompleted) {
+      return;
+    }
+    final completed = await setCompletion(habitId, true, habit.description);
+
+    if (!completed) {
+      throw Exception('Failed to complete habit');
+    }
+
+    await _updateWidget(
+      iOSWidgetName: widgetiOSName,
+      qualifiedAndroidName: widgetAndroidName,
+    );
   }
 
-  static Future<void> _uncomplete() async {
-    debugPrint('[WidgetService.uncomplete]');
+  static Future<void> _uncomplete(String habitId) async {
+    // find habit by id
+    final habit = await loadHabit(habitId);
+
+    if (!habit.gCompleted) {
+      return;
+    }
+
+    final completed = await setCompletion(habitId, false, habit.description);
+
+    if (!completed) {
+      throw Exception('Failed to uncomplete habit with id $habitId');
+    }
+
+    await _updateWidget(
+      iOSWidgetName: widgetiOSName,
+      qualifiedAndroidName: widgetAndroidName,
+    );
+  }
+
+  /// Check if a habit is completed for a specific day
+  static Future<bool> _isCompletedForDay(String habitId, DateTime day) async {
+    try {
+      final log = await loadLog(habitId);
+      return log.gTimeStamps.any((dt) => isSameDay(dt, day));
+    } catch (_) {
+      return false;
+    }
+  }
+
+  /// Sync habit data to the widget (ID, name, completion status)
+  /// This should be called when habits are created, updated, or when app lifecycle changes
+  static Future<void> syncHabitsToWidget() async {
+    try {
+      // Load all habits from database
+      final result = await loadHabitsFromDb();
+      final List<Habit> habits = (result['habits'] as List<dynamic>)
+          .cast<Habit>();
+      final now = DateTime.now();
+
+      // Prepare habit data for widget
+      final List<Map<String, dynamic>> habitData = [];
+
+      for (final habit in habits) {
+        // Check completion status for today
+        final isCompleted = await _isCompletedForDay(habit.gId, now);
+
+        habitData.add({
+          'id': habit.gId,
+          'name': habit.name,
+          'isCompleted': isCompleted,
+        });
+      }
+
+      // Save habit data to widget
+      await _saveData<List<Map<String, dynamic>>>('habits', habitData);
+
+      // Also save count for convenience
+      await _saveData<int>('habitCount', habitData.length);
+
+      // Update the widget
+      await _updateWidget(
+        iOSWidgetName: widgetiOSName,
+        qualifiedAndroidName: widgetAndroidName,
+      );
+
+      debugPrint(
+        '[WidgetService.syncHabitsToWidget] Synced ${habitData.length} habits to widget',
+      );
+    } catch (e) {
+      debugPrint('[WidgetService.syncHabitsToWidget] Error syncing habits: $e');
+    }
   }
 
   @pragma('vm:entry-point')
@@ -59,9 +146,22 @@ class WidgetService {
     // We check the host of the uri to determine which action should be triggered.
     debugPrint('[WidgetService.interactiveCallback] uri: $uri');
     if (uri?.host == 'complete') {
-      await _complete();
+      // grab id query param
+      final id = uri?.queryParameters['id'];
+      if (id == null) {
+        return;
+      }
+      await _complete(id);
+      // Sync after completion to update widget
+      await syncHabitsToWidget();
     } else if (uri?.host == 'uncomplete') {
-      await _uncomplete();
+      final id = uri?.queryParameters['id'];
+      if (id == null) {
+        return;
+      }
+      await _uncomplete(id);
+      // Sync after uncompletion to update widget
+      await syncHabitsToWidget();
     }
   }
 }

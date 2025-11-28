@@ -8,6 +8,7 @@
 import WidgetKit
 import SwiftUI
 import AppIntents
+import Foundation
 
 struct Provider: TimelineProvider {
     func placeholder(in context: Context) -> HabitWidgetEntry {
@@ -40,23 +41,38 @@ struct HabitWidgetEntry: TimelineEntry {
     
     let tasks: [HabitTask]
     
+    let totalTasks: Int
+    
     static var preview: HabitWidgetEntry {
         let demoTasks: [HabitTask] = [
-            .init(id: .init(), name: "Clean the Toilet"),
-            .init(id: .init(), name: "Brush Teeth"),
-            .init(id: .init(), name: "Make Bed"),
+            .init(id: "habit-1", name: "Clean the Toilet"),
+            .init(id: "habit-2", name: "Brush Teeth"),
+            .init(id: "habit-3", name: "Make Bed"),
         ]
-        return HabitWidgetEntry(date: .now, tasks: demoTasks)
+        return HabitWidgetEntry(date: .now, tasks: demoTasks, totalTasks: 3)
     }
     
     static var current: HabitWidgetEntry {
-        let tasks: [HabitTask] = [
-            .init(id: .init(), name: "Clean the Toilet"),
-            .init(id: .init(), name: "Brush Teeth"),
-            .init(id: .init(), name: "Make Bed"),
-        ]
+        let prefs = UserDefaults(suiteName: "group.com.example.habitTaskTrackerGroup")
         
-        return HabitWidgetEntry(date: .now, tasks: tasks)
+        let savedData = prefs?.string(forKey: "habits") ?? "[]"
+        
+        guard let jsonData = savedData.data(using: .utf8) else {
+            fatalError("Could not convert string to Data")
+        }
+        
+        let decoder = JSONDecoder()
+        
+        var tasks: [HabitTask] = []
+        do {
+             tasks = try decoder.decode([HabitTask].self, from: jsonData)
+        } catch {
+            print(error.localizedDescription)
+        }
+        
+        let totalTasks = prefs?.integer(forKey: "habitCount")
+        
+        return HabitWidgetEntry(date: .now, tasks: tasks, totalTasks: totalTasks ?? 0)
     }
 }
 
@@ -89,11 +105,11 @@ struct HabitWidgetEntryView : View {
                     .font(.largeTitle)
                     .padding(.bottom, 10)
                 Spacer()
-                Text(entry.tasks.count, format: .number)
+                Text(entry.totalTasks, format: .number)
                      .font(.title)
             }
             ForEach(entry.tasks.prefix(7), id: \.id) {task in
-                Toggle(isOn: task.isDone, intent: BackgroundIntent(method: "complete", id: task.id)) {
+                Toggle(isOn: task.isCompleted, intent: BackgroundIntent(method: "complete", id: task.id)) {
                     Text(task.name)
                         .lineLimit(1)
                 }
@@ -118,8 +134,8 @@ struct HabitWidget: Widget {
                     .background()
             }
         }
-        .configurationDisplayName("My Widget")
-        .description("This is an example widget.")
+        .configurationDisplayName("Tasks Widget")
+        .description("Mark off your habits/tasks for today")
         .supportedFamilies([.systemLarge])
     }
 }
