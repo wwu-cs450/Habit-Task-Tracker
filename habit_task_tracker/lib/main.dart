@@ -252,7 +252,7 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
                                       final success = await habitState
                                           .toggleCompletion(habit.gId, newVal);
 
-                                      if (!success && mounted) {
+                                      if (!success && context.mounted) {
                                         ScaffoldMessenger.of(
                                           context,
                                         ).showSnackBar(
