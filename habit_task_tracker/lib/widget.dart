@@ -52,19 +52,18 @@ class WidgetService {
     // find habit by id
     final habit = await loadHabit(habitId);
 
-    if (habit.gCompleted) {
-      return;
-    }
+    // if (habit.completedDates.any((d) => isSameDay(d, DateTime.now()))) {
+    //   return;
+    // }
     final completed = await setCompletion(habitId, true, habit.description);
 
     if (!completed) {
       throw Exception('Failed to complete habit');
     }
 
-    await _updateWidget(
-      iOSWidgetName: widgetiOSName,
-      qualifiedAndroidName: widgetAndroidName,
-    );
+    syncHabitsToWidget().catchError((e) {
+      debugPrint('Error syncing habits to widget after completion: $e');
+    });
   }
 
   static Future<void> _uncomplete(String habitId) async {

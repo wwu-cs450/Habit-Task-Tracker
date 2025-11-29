@@ -14,6 +14,7 @@ import home_widget
 public struct BackgroundIntent: AppIntent {
     static public var title: LocalizedStringResource = "Complete Task"
     
+    // TODO: figure out how to do background mode, not foreground
     static public var supportedModes: IntentModes = [.foreground]
     
     @Parameter(title: "Method")
