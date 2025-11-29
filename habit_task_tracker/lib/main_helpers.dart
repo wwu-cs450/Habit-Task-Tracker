@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:habit_task_tracker/log.dart';
 import 'package:habit_task_tracker/notifier.dart' as notifier;
+import 'package:habit_task_tracker/uuid.dart';
 
 // I got help from Copilot to write the following functions.
 
@@ -117,7 +118,6 @@ Future<Habit> createAndPersistHabit(
   bool isRecurring = false,
   Frequency? frequency,
 }) async {
-  final id = DateTime.now().millisecondsSinceEpoch.toString();
   final DateTime s = startDate ?? DateTime.now();
   final DateTime e = endDate ?? s.add(const Duration(days: 1));
   final Frequency effectiveFrequency = isRecurring
@@ -125,7 +125,6 @@ Future<Habit> createAndPersistHabit(
       : (frequency ?? Frequency.none);
 
   final habit = Habit(
-    id: id,
     name: title,
     description: description,
     startDate: s,
@@ -134,8 +133,7 @@ Future<Habit> createAndPersistHabit(
     frequency: effectiveFrequency,
   ).withNotification();
 
-  final Map<String, dynamic> m = habit.toJson();
-  await db.collection('data/Habits').doc(id).set(m);
+  await saveHabit(habit);
   return habit;
 }
 
@@ -412,7 +410,7 @@ bool isSameDay(DateTime a, DateTime b) {
 
 /// Persist completion state for a habit for "today".
 Future<bool> setCompletion(
-  String habitId,
+  Uuid habitId,
   bool completed,
   String? description,
 ) async {
@@ -436,7 +434,7 @@ Future<bool> setCompletion(
         final existingLog = await loadLog(habitId);
         existingLog.timeStamps.removeWhere((dt) => isSameDay(dt, now));
         if (existingLog.timeStamps.isEmpty) {
-          await deleteData('Logs', habitId);
+          await deleteData('Logs', habitId.toString());
         } else {
           await saveLog(existingLog);
         }
@@ -454,7 +452,7 @@ Future<bool> setCompletion(
 /// Check whether a Habit has a log timestamp for today.
 Future<bool> _isCompletedToday(Habit habit) async {
   try {
-    final l = await loadLog(habit.gId);
+    final l = await loadLog(Uuid.fromString(habit.gId));
     final now = DateTime.now();
     return l.gTimeStamps.any((dt) => isSameDay(dt, now));
   } catch (_) {
