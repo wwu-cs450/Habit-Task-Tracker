@@ -1,7 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:habit_task_tracker/habit.dart';
 import 'package:habit_task_tracker/repository/habit_repository.dart';
-import 'package:habit_task_tracker/widget.dart';
+// import 'package:habit_task_tracker/widget.dart'; // requires a different PR
 
 /// Manages habit state and notifies listeners of changes
 /// This is the single source of truth for habit data in the app
@@ -38,9 +38,9 @@ class HabitState extends ChangeNotifier {
       _error = null;
 
       // Sync to widget after loading
-      WidgetService.syncHabitsToWidget().catchError((e) {
-        debugPrint('Error syncing to widget: $e');
-      });
+      // WidgetService.syncHabitsToWidget().catchError((e) {
+      //   debugPrint('Error syncing to widget: $e');
+      // });
     } catch (e) {
       _error = 'Failed to load habits: $e';
       debugPrint(_error);
@@ -65,9 +65,9 @@ class HabitState extends ChangeNotifier {
         notifyListeners();
 
         // Sync to widget
-        WidgetService.syncHabitsToWidget().catchError((e) {
-          debugPrint('Error syncing to widget: $e');
-        });
+        // WidgetService.syncHabitsToWidget().catchError((e) {
+        //   debugPrint('Error syncing to widget: $e');
+        // });
       }
 
       return success;
@@ -83,9 +83,9 @@ class HabitState extends ChangeNotifier {
     notifyListeners();
 
     // Sync to widget
-    WidgetService.syncHabitsToWidget().catchError((e) {
-      debugPrint('Error syncing to widget: $e');
-    });
+    // WidgetService.syncHabitsToWidget().catchError((e) {
+    //   debugPrint('Error syncing to widget: $e');
+    // });
   }
 
   /// Remove a habit
@@ -95,9 +95,9 @@ class HabitState extends ChangeNotifier {
     notifyListeners();
 
     // Sync to widget
-    WidgetService.syncHabitsToWidget().catchError((e) {
-      debugPrint('Error syncing to widget: $e');
-    });
+    // WidgetService.syncHabitsToWidget().catchError((e) {
+    //   debugPrint('Error syncing to widget: $e');
+    // });
   }
 
   /// Refresh habits from database (useful when app resumes)
