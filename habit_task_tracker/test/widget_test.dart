@@ -7,8 +7,10 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:provider/provider.dart';
 
 import 'package:habit_task_tracker/main.dart';
+import 'package:habit_task_tracker/state/habit_state.dart';
 import '_setup_mocks.dart';
 
 void main() {
@@ -18,7 +20,10 @@ void main() {
     WidgetTester tester,
   ) async {
     // Build our app and trigger a frame.
-    await tester.pumpWidget(const MyApp());
+    // Wrap with Provider since MyApp now requires HabitState
+    await tester.pumpWidget(
+      ChangeNotifierProvider(create: (_) => HabitState(), child: const MyApp()),
+    );
 
     // Test adding habits
 

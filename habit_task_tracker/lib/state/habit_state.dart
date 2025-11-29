@@ -53,10 +53,7 @@ class HabitState extends ChangeNotifier {
   /// Toggle completion status for a habit
   Future<bool> toggleCompletion(String habitId, bool completed) async {
     try {
-      final success = await _repository.setCompletionStatus(
-        habitId,
-        completed,
-      );
+      final success = await _repository.setCompletionStatus(habitId, completed);
 
       if (success) {
         // Update local state
@@ -108,4 +105,3 @@ class HabitState extends ChangeNotifier {
     await loadHabits(silent: false);
   }
 }
-
