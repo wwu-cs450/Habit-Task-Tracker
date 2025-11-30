@@ -103,7 +103,6 @@ class _MyHomePageState extends State<MyHomePage> {
             ..clear()
             ..addAll(List<bool>.filled(_habits.length, false));
         });
-        _updateProgressBar(_habits.length, _completedToday.length);
       } catch (e) {
         debugPrint('Search reload failed: $e');
       }
@@ -116,8 +115,7 @@ class _MyHomePageState extends State<MyHomePage> {
       final List<Habit> allHabits = (all['habits'] as List<dynamic>)
           .cast<Habit>();
 
-      // Prepare textual query and date filters. Support `start:YYYY-MM-DD`
-      // and also a bare ISO date (YYYY-MM-DD) that matches either start or end.
+      // Date formatting
       final lower = trimmedValue.toLowerCase();
       final startTokenMatch = RegExp(
         r'start:\s*(\d{4}-\d{2}-\d{2})',
@@ -130,6 +128,7 @@ class _MyHomePageState extends State<MyHomePage> {
         textOnly = textOnly.replaceAll(startTokenMatch.group(0)!, '').trim();
       }
 
+      // Date searching
       final bareDateMatch = RegExp(
         r"\b(\d{4}-\d{2}-\d{2})\b",
       ).firstMatch(textOnly);
@@ -182,9 +181,9 @@ class _MyHomePageState extends State<MyHomePage> {
           continue;
         }
 
-        // If the query contains numeric tokens (e.g. "1" in
-        // "habit 1"), require those numeric tokens to match as
-        // whole tokens in the name/description. This
+        // If the query contains numbers 
+        // require those numbers to match
+        // exactly in the name/description. This
         // prevents fuzzy partial matches like "habit 1" matching
         // "habit 10".
         final digitMatches = RegExp(
@@ -216,7 +215,7 @@ class _MyHomePageState extends State<MyHomePage> {
           }
         }
 
-        // Fallback to fuzzy partial matching
+        // If no exact matches, do fuzzy matching
         final int nameScore = partialRatio(name, q);
         if (nameScore > tempFuzzyVal) {
           results.add(h);
@@ -353,6 +352,7 @@ class _MyHomePageState extends State<MyHomePage> {
                     vertical: 8,
                     horizontal: 12,
                   ),
+                  filled: true,
                   fillColor: Colors.grey.shade100,
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
@@ -365,6 +365,7 @@ class _MyHomePageState extends State<MyHomePage> {
                     borderRadius: BorderRadius.circular(12),
                   ),
                 ),
+                // Handle searching
                 onChanged: (value) async {
                   _localSearch(value);
                 },
