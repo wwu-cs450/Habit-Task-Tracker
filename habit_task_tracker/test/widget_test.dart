@@ -66,8 +66,9 @@ void main() {
     // Click the delete button. Expand the card if necessary
     final deleteFinder = find.widgetWithIcon(IconButton, Icons.delete);
     if (deleteFinder.evaluate().isEmpty) {
-      if (listTileInCard.evaluate().isNotEmpty)
+      if (listTileInCard.evaluate().isNotEmpty) {
         await tester.tap(listTileInCard);
+      }
       await tester.pump(const Duration(milliseconds: 500));
       await tester.pumpAndSettle(const Duration(seconds: 1));
     }
