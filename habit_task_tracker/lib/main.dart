@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'habit.dart';
 import 'main_helpers.dart';
-import 'search.dart';
+// import 'search.dart';
 import 'calendar.dart';
+import 'package:fuzzywuzzy/fuzzywuzzy.dart';
 
 // I got some help from GitHub CoPilot with this code. I also got some ideas from
 // this youtube video: https://www.youtube.com/watch?v=K4P5DZ9TRns
@@ -80,6 +81,128 @@ class _MyHomePageState extends State<MyHomePage> {
         });
   }
 
+  void localSearch(String value) async  {
+    final trimmedValue = value.trim();
+    debugPrint('Search input: "$trimmedValue"');
+
+    if (trimmedValue.isEmpty) {
+      try {
+        final result = await loadHabitsFromDb();
+        if (!mounted) return;
+        final List<Habit> habits =
+            (result['habits'] as List<dynamic>).cast<Habit>();
+        final Set<String> completed =
+            (result['completedIds'] as Set<dynamic>)
+                .cast<String>();
+        setState(() {
+          _habits = habits;
+          _completedToday
+            ..clear()
+            ..addAll(completed);
+          _expanded
+            ..clear()
+            ..addAll(List<bool>.filled(_habits.length, false));
+        });
+        _updateProgressBar(
+          _habits.length,
+          _completedToday.length,
+        );
+      } catch (e) {
+        debugPrint('Search reload failed: $e');
+      }
+      return;
+    }
+
+    try {
+      // Temporary in-memory search fallback while search.dart is being fixed
+      final all = await loadHabitsFromDb();
+      final List<Habit> allHabits =
+          (all['habits'] as List<dynamic>).cast<Habit>();
+      final q = trimmedValue.toLowerCase();
+      const int tempFuzzyVal = 70;
+      final List<Habit> results = [];
+
+      for (final h in allHabits) {
+        final name = h.name.toLowerCase();
+        final desc = (h.description ?? '').toLowerCase();
+
+          // Exact match or whole-word matching
+          final normalizedName = name;
+          final normalizedDesc = desc;
+          final pattern = RegExp(r'\b' + RegExp.escape(q) + r'\b');
+          if (normalizedName == q || pattern.hasMatch(normalizedName) || pattern.hasMatch(normalizedDesc)) {
+            results.add(h);
+            continue;
+          }
+
+          // If the query contains numeric tokens (e.g. "1" in
+          // "habit 1"), require those numeric tokens to match as
+          // whole tokens in the candidate name/description. This
+          // prevents fuzzy partial matches like "habit 1" ->
+          // "habit 10".
+          final digitMatches = RegExp(r'\b(\d+)\b').allMatches(q).map((m) => m.group(1)!).toList();
+          if (digitMatches.isNotEmpty) {
+            final candidateDigits = <String>[];
+            candidateDigits.addAll(RegExp(r'\b(\d+)\b')
+                .allMatches(normalizedName)
+                .map((m) => m.group(1)!).toList());
+            candidateDigits.addAll(RegExp(r'\b(\d+)\b')
+                .allMatches(normalizedDesc)
+                .map((m) => m.group(1)!).toList());
+
+            bool allDigitsMatchAsPrefix = true;
+            for (final d in digitMatches) {
+              final found = candidateDigits.any((t) => t.startsWith(d));
+              if (!found) {
+                allDigitsMatchAsPrefix = false;
+                break;
+              }
+            }
+            if (!allDigitsMatchAsPrefix) {
+              continue;
+            }
+          }
+
+          // Fallback to fuzzy partial matching
+          final int nameScore = partialRatio(name, q);
+          if (nameScore > tempFuzzyVal) {
+            results.add(h);
+            continue;
+          }
+
+          if (h.description != null) {
+            final int descScore = partialRatio(desc, q);
+            if (descScore > tempFuzzyVal) {
+              results.add(h);
+            }
+          }
+      }
+
+      debugPrint(
+        'Local search results for "$trimmedValue": ${results.length} habits found',
+      );
+
+      if (!mounted) return;
+
+      final Set<String> completedMatches = results
+          .where((h) => _completedToday.contains(h.gId))
+          .map((h) => h.gId)
+          .toSet();
+
+      setState(() {
+        _habits = results;
+        _expanded
+          ..clear()
+          ..addAll(List<bool>.filled(_habits.length, false));
+        _completedToday
+          ..clear()
+          ..addAll(completedMatches);
+      });
+    } catch (e) {
+      debugPrint('Search fallback failed: $e');
+    }
+  }
+
   // Method for updating the Progress Bar
   void _updateProgressBar(int total, int done) {
     final double p = total == 0 ? 0.0 : done / total;
@@ -148,8 +271,10 @@ class _MyHomePageState extends State<MyHomePage> {
                 onTap: () {
                   Navigator.pop(context);
                   Navigator.pushReplacement(
-                    context, 
-                    MaterialPageRoute(builder: (context) => CalendarPage(habits: _habits)),
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => CalendarPage(habits: _habits),
+                    ),
                   );
                 },
               ),
@@ -171,7 +296,10 @@ class _MyHomePageState extends State<MyHomePage> {
                   hintText: 'Search Habits',
                   prefixIcon: const Icon(Icons.search, size: 20),
                   isDense: true,
-                  contentPadding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+                  contentPadding: const EdgeInsets.symmetric(
+                    vertical: 8,
+                    horizontal: 12,
+                  ),
                   fillColor: Colors.grey.shade100,
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
@@ -185,54 +313,7 @@ class _MyHomePageState extends State<MyHomePage> {
                   ),
                 ),
                 onChanged: (value) async {
-                  final trimmedValue = value.trim();
-
-                  if (trimmedValue.isEmpty) {
-                    try {
-                      final result = await loadHabitsFromDb();
-                      if (!mounted) return;
-                      final List<Habit> habits =
-                          (result['habits'] as List<dynamic>).cast<Habit>();
-                      final Set<String> completed =
-                          (result['completedIds'] as Set<dynamic>).cast<String>();
-                      setState(() {
-                        _habits = habits;
-                        _completedToday
-                          ..clear()
-                          ..addAll(completed);
-                        _expanded
-                          ..clear()
-                          ..addAll(List<bool>.filled(_habits.length, false));
-                      });
-                      _updateProgressBar(_habits.length, _completedToday.length);
-                    } catch (e) {
-                      debugPrint('Search reload failed: $e');
-                    }
-                    return;
-                  }
-
-                  try {
-                    final results = await searchHabits(name: trimmedValue);
-                    if (!mounted) return;
-
-                    final Set<String> completedMatches = results
-                        .where((h) => _completedToday.contains(h.gId))
-                        .map((h) => h.gId)
-                        .toSet();
-
-                    setState(() {
-                      _habits = results;
-                      _expanded
-                        ..clear()
-                        ..addAll(List<bool>.filled(_habits.length, false));
-                      _completedToday
-                        ..clear()
-                        ..addAll(completedMatches);
-                    });
-                    _updateProgressBar(_habits.length, _completedToday.length);
-                  } catch (e) {
-                    debugPrint('Search failed: $e');
-                  }
+                  localSearch(value);
                 },
                 style: const TextStyle(fontSize: 14),
               ),

@@ -212,6 +212,8 @@ Future<void> showCreateHabitDialog(
                     ],
                   ),
                   const SizedBox(height: 12),
+                  // NEED TO CREATE A TIME FIELD
+                  
                   // Frequency selector visible only if recurring
                   if (selectedRecurring)
                     Row(
