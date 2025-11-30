@@ -181,7 +181,7 @@ class _MyHomePageState extends State<MyHomePage> {
           continue;
         }
 
-        // If the query contains numbers 
+        // If the query contains numbers
         // require those numbers to match
         // exactly in the name/description. This
         // prevents fuzzy partial matches like "habit 1" matching
