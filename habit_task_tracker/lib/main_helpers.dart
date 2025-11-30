@@ -3,7 +3,6 @@ import 'package:habit_task_tracker/habit.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:habit_task_tracker/log.dart';
-import 'package:habit_task_tracker/notifier.dart' as notifier;
 
 // I got help from Copilot to write the following functions.
 
@@ -100,11 +99,6 @@ Future<void> deleteHabitWithConfirmation(
   } catch (e) {
     debugPrint('Failed to delete habit ${habit.gId}: $e');
   }
-  try {
-    await notifier.Notification.cancel(habit);
-  } catch (e) {
-    debugPrint('Failed to cancel notification for ${habit.gId}: $e');
-  }
 }
 
 // THIS COULD LIKELY BE MOVED TO HABIT.DART
@@ -116,6 +110,7 @@ Future<Habit> createAndPersistHabit(
   DateTime? endDate,
   bool isRecurring = false,
   Frequency? frequency,
+  List<String>? times,
 }) async {
   final id = DateTime.now().millisecondsSinceEpoch.toString();
   final DateTime s = startDate ?? DateTime.now();
@@ -132,9 +127,13 @@ Future<Habit> createAndPersistHabit(
     endDate: e,
     isRecurring: isRecurring,
     frequency: effectiveFrequency,
-  ).withNotification();
+  );
 
   final Map<String, dynamic> m = habit.toJson();
+  // If times were provided in the create dialog, persist them in the stored JSON.
+  if (times != null) {
+    m['times'] = times;
+  }
   await db.collection('data/Habits').doc(id).set(m);
   return habit;
 }
@@ -146,6 +145,7 @@ Future<void> showCreateHabitDialog(
 ) async {
   final titleController = TextEditingController();
   final descController = TextEditingController();
+  final timesController = TextEditingController();
   final dateController = TextEditingController();
   final endDateController = TextEditingController();
   DateTime? selectedStartDate;
@@ -196,6 +196,15 @@ Future<void> showCreateHabitDialog(
                     textAlignVertical: TextAlignVertical.top,
                   ),
                   const SizedBox(height: 12),
+                  // Times input (comma-separated HH:MM)
+                  TextField(
+                    controller: timesController,
+                    decoration: const InputDecoration(
+                      labelText: 'Times (comma-separated)',
+                    ),
+                    keyboardType: TextInputType.text,
+                  ),
+                  const SizedBox(height: 12),
                   // Recurring toggle
                   Row(
                     children: [
@@ -212,14 +221,15 @@ Future<void> showCreateHabitDialog(
                     ],
                   ),
                   const SizedBox(height: 12),
-                  // NEED TO CREATE A TIME FIELD
-                  
                   // Frequency selector visible only if recurring
                   if (selectedRecurring)
                     Row(
                       children: [
                         const Text('Frequency'),
-                        const SizedBox(width: 12),
+           
+                  // NEED TO CREATE A TIME FIELD
+
+            const SizedBox(width: 12),
                         DropdownButton<Frequency>(
                           value: selectedFrequency,
                           items: const [
@@ -385,6 +395,7 @@ Future<void> showCreateHabitDialog(
 
   titleController.dispose();
   descController.dispose();
+  timesController.dispose();
   dateController.dispose();
   endDateController.dispose();
 }

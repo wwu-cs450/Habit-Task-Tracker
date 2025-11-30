@@ -81,7 +81,8 @@ class _MyHomePageState extends State<MyHomePage> {
         });
   }
 
-  void localSearch(String value) async  {
+  // TEMPORARY LOCAL SEARCH METHOD UNTIL search.dart IS FIXED
+  void _localSearch(String value) async {
     final trimmedValue = value.trim();
     debugPrint('Search input: "$trimmedValue"');
 
@@ -89,11 +90,10 @@ class _MyHomePageState extends State<MyHomePage> {
       try {
         final result = await loadHabitsFromDb();
         if (!mounted) return;
-        final List<Habit> habits =
-            (result['habits'] as List<dynamic>).cast<Habit>();
-        final Set<String> completed =
-            (result['completedIds'] as Set<dynamic>)
-                .cast<String>();
+        final List<Habit> habits = (result['habits'] as List<dynamic>)
+            .cast<Habit>();
+        final Set<String> completed = (result['completedIds'] as Set<dynamic>)
+            .cast<String>();
         setState(() {
           _habits = habits;
           _completedToday
@@ -103,10 +103,7 @@ class _MyHomePageState extends State<MyHomePage> {
             ..clear()
             ..addAll(List<bool>.filled(_habits.length, false));
         });
-        _updateProgressBar(
-          _habits.length,
-          _completedToday.length,
-        );
+        _updateProgressBar(_habits.length, _completedToday.length);
       } catch (e) {
         debugPrint('Search reload failed: $e');
       }
@@ -116,9 +113,30 @@ class _MyHomePageState extends State<MyHomePage> {
     try {
       // Temporary in-memory search fallback while search.dart is being fixed
       final all = await loadHabitsFromDb();
-      final List<Habit> allHabits =
-          (all['habits'] as List<dynamic>).cast<Habit>();
-      final q = trimmedValue.toLowerCase();
+      final List<Habit> allHabits = (all['habits'] as List<dynamic>)
+          .cast<Habit>();
+
+      // Prepare textual query and date filters. Support `start:YYYY-MM-DD`
+      // and also a bare ISO date (YYYY-MM-DD) that matches either start or end.
+      final lower = trimmedValue.toLowerCase();
+      final startTokenMatch = RegExp(r'start:\s*(\d{4}-\d{2}-\d{2})',
+              caseSensitive: false)
+          .firstMatch(lower);
+      DateTime? startFilter;
+      var textOnly = lower;
+      if (startTokenMatch != null) {
+        startFilter = DateTime.tryParse(startTokenMatch.group(1)!);
+        textOnly = textOnly.replaceAll(startTokenMatch.group(0)!, '').trim();
+      }
+
+      final bareDateMatch = RegExp(r"\b(\d{4}-\d{2}-\d{2})\b").firstMatch(textOnly);
+      DateTime? bareDateFilter;
+      if (bareDateMatch != null) {
+        bareDateFilter = DateTime.tryParse(bareDateMatch.group(1)!);
+        textOnly = textOnly.replaceAll(bareDateMatch.group(0)!, '').trim();
+      }
+
+      final q = textOnly;
       const int tempFuzzyVal = 70;
       final List<Habit> results = [];
 
@@ -126,56 +144,88 @@ class _MyHomePageState extends State<MyHomePage> {
         final name = h.name.toLowerCase();
         final desc = (h.description ?? '').toLowerCase();
 
-          // Exact match or whole-word matching
-          final normalizedName = name;
-          final normalizedDesc = desc;
-          final pattern = RegExp(r'\b' + RegExp.escape(q) + r'\b');
-          if (normalizedName == q || pattern.hasMatch(normalizedName) || pattern.hasMatch(normalizedDesc)) {
-            results.add(h);
+        // Date filtering
+        if (startFilter != null) {
+          if (!isSameDay(h.startDate, startFilter)) {
             continue;
           }
-
-          // If the query contains numeric tokens (e.g. "1" in
-          // "habit 1"), require those numeric tokens to match as
-          // whole tokens in the candidate name/description. This
-          // prevents fuzzy partial matches like "habit 1" ->
-          // "habit 10".
-          final digitMatches = RegExp(r'\b(\d+)\b').allMatches(q).map((m) => m.group(1)!).toList();
-          if (digitMatches.isNotEmpty) {
-            final candidateDigits = <String>[];
-            candidateDigits.addAll(RegExp(r'\b(\d+)\b')
-                .allMatches(normalizedName)
-                .map((m) => m.group(1)!).toList());
-            candidateDigits.addAll(RegExp(r'\b(\d+)\b')
-                .allMatches(normalizedDesc)
-                .map((m) => m.group(1)!).toList());
-
-            bool allDigitsMatchAsPrefix = true;
-            for (final d in digitMatches) {
-              final found = candidateDigits.any((t) => t.startsWith(d));
-              if (!found) {
-                allDigitsMatchAsPrefix = false;
-                break;
-              }
-            }
-            if (!allDigitsMatchAsPrefix) {
-              continue;
-            }
-          }
-
-          // Fallback to fuzzy partial matching
-          final int nameScore = partialRatio(name, q);
-          if (nameScore > tempFuzzyVal) {
-            results.add(h);
+        }
+        if (bareDateFilter != null) {
+          final startMatches = isSameDay(h.startDate, bareDateFilter);
+          final endMatches = isSameDay(h.endDate, bareDateFilter);
+          if (!startMatches && !endMatches) {
             continue;
           }
+        }
+        if (q.isEmpty) {
+          results.add(h);
+          continue;
+        }
 
-          if (h.description != null) {
-            final int descScore = partialRatio(desc, q);
-            if (descScore > tempFuzzyVal) {
-              results.add(h);
+        // Exact match or whole-word matching
+        final normalizedName = name;
+        final normalizedDesc = desc;
+        final pattern = RegExp(r'\b' + RegExp.escape(q) + r'\b');
+        if (normalizedName == q ||
+            pattern.hasMatch(normalizedName) ||
+            pattern.hasMatch(normalizedDesc)) {
+          results.add(h);
+          continue;
+        }
+
+        // Simple description checking
+        if (normalizedDesc.contains(q)) {
+          results.add(h);
+          continue;
+        }
+
+        // If the query contains numeric tokens (e.g. "1" in
+        // "habit 1"), require those numeric tokens to match as
+        // whole tokens in the name/description. This
+        // prevents fuzzy partial matches like "habit 1" matching
+        // "habit 10".
+        final digitMatches = RegExp(
+          r'\b(\d+)\b',
+        ).allMatches(q).map((m) => m.group(1)!).toList();
+        if (digitMatches.isNotEmpty) {
+          final candidateDigits = <String>[];
+          candidateDigits.addAll(
+            RegExp(
+              r'\b(\d+)\b',
+            ).allMatches(normalizedName).map((m) => m.group(1)!).toList(),
+          );
+          candidateDigits.addAll(
+            RegExp(
+              r'\b(\d+)\b',
+            ).allMatches(normalizedDesc).map((m) => m.group(1)!).toList(),
+          );
+
+          bool allDigitsMatchAsPrefix = true;
+          for (final d in digitMatches) {
+            final found = candidateDigits.any((t) => t.startsWith(d));
+            if (!found) {
+              allDigitsMatchAsPrefix = false;
+              break;
             }
           }
+          if (!allDigitsMatchAsPrefix) {
+            continue;
+          }
+        }
+
+        // Fallback to fuzzy partial matching
+        final int nameScore = partialRatio(name, q);
+        if (nameScore > tempFuzzyVal) {
+          results.add(h);
+          continue;
+        }
+
+        if (h.description != null) {
+          final int descScore = partialRatio(desc, q);
+          if (descScore > tempFuzzyVal) {
+            results.add(h);
+          }
+        }
       }
 
       debugPrint(
@@ -313,7 +363,7 @@ class _MyHomePageState extends State<MyHomePage> {
                   ),
                 ),
                 onChanged: (value) async {
-                  localSearch(value);
+                  _localSearch(value);
                 },
                 style: const TextStyle(fontSize: 14),
               ),
