@@ -226,10 +226,9 @@ Future<void> showCreateHabitDialog(
                     Row(
                       children: [
                         const Text('Frequency'),
-           
-                  // NEED TO CREATE A TIME FIELD
 
-            const SizedBox(width: 12),
+                        // NEED TO CREATE A TIME FIELD
+                        const SizedBox(width: 12),
                         DropdownButton<Frequency>(
                           value: selectedFrequency,
                           items: const [

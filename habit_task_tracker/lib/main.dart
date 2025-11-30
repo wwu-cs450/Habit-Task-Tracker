@@ -119,9 +119,10 @@ class _MyHomePageState extends State<MyHomePage> {
       // Prepare textual query and date filters. Support `start:YYYY-MM-DD`
       // and also a bare ISO date (YYYY-MM-DD) that matches either start or end.
       final lower = trimmedValue.toLowerCase();
-      final startTokenMatch = RegExp(r'start:\s*(\d{4}-\d{2}-\d{2})',
-              caseSensitive: false)
-          .firstMatch(lower);
+      final startTokenMatch = RegExp(
+        r'start:\s*(\d{4}-\d{2}-\d{2})',
+        caseSensitive: false,
+      ).firstMatch(lower);
       DateTime? startFilter;
       var textOnly = lower;
       if (startTokenMatch != null) {
@@ -129,7 +130,9 @@ class _MyHomePageState extends State<MyHomePage> {
         textOnly = textOnly.replaceAll(startTokenMatch.group(0)!, '').trim();
       }
 
-      final bareDateMatch = RegExp(r"\b(\d{4}-\d{2}-\d{2})\b").firstMatch(textOnly);
+      final bareDateMatch = RegExp(
+        r"\b(\d{4}-\d{2}-\d{2})\b",
+      ).firstMatch(textOnly);
       DateTime? bareDateFilter;
       if (bareDateMatch != null) {
         bareDateFilter = DateTime.tryParse(bareDateMatch.group(1)!);
