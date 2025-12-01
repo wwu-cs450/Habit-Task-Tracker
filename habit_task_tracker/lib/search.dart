@@ -1,15 +1,12 @@
 import 'package:habit_task_tracker/habit.dart';
 import 'package:localstore/localstore.dart';
-import 'dart:io';
 import 'package:fuzzywuzzy/fuzzywuzzy.dart';
 
 final db = Localstore.instance;
 final fuzzyVal = 70; // threshold for fuzzy search
 
 // check if //data/habits exists
-final filePath = Directory('data/Habits');
-bool exists = filePath.existsSync();
-final collectionHabits = exists ? db.collection('data/Habits') : null;
+final collectionHabits = db.collection('data/Habits');
 
 Future<List<Habit>> searchHabits({
   DateTime? date1,
@@ -18,9 +15,6 @@ Future<List<Habit>> searchHabits({
   String? description,
 }) {
   Future<List<Habit>> results = Future.value([]);
-  if (!exists) {
-    return results;
-  }
   if (date1 != null && date2 != null) {
     return searchHabitsBetweenDates(date1, date2);
   } else if (name != null) {
@@ -59,7 +53,7 @@ Future<List<Habit>> searchHabitsBetweenDates(
 
 Future<List<Habit>> searchHabitsByName(String name) async {
   List<Habit> results = [];
-  final habitsData = await collectionHabits?.get();
+  final habitsData = await collectionHabits.get();
   if (habitsData == null) {
     return results;
   }
@@ -75,7 +69,7 @@ Future<List<Habit>> searchHabitsByName(String name) async {
 
 Future<List<Habit>> searchHabitsByDescription(String description) async {
   List<Habit> results = [];
-  final habitsData = await collectionHabits?.get();
+  final habitsData = await collectionHabits.get();
   if (habitsData == null) {
     return results;
   }
@@ -97,7 +91,7 @@ Future<List<Habit>> searchHabitsByDescription(String description) async {
 
 Future<List<Habit>> searchAllHabits() async {
   List<Habit> results = [];
-  final habitsData = await collectionHabits?.get();
+  final habitsData = await collectionHabits.get();
   if (habitsData == null) {
     return results;
   }
