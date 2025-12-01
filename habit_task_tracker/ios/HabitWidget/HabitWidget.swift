@@ -97,25 +97,45 @@ struct CheckToggleStyle: ToggleStyle {
 
 struct HabitWidgetEntryView : View {
     var entry: Provider.Entry
+    
+    @Environment(\.widgetFamily) var family
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            HStack(alignment: .firstTextBaseline) {
-                Text("Habit Task Tracker")
-                    .font(.largeTitle)
-                    .padding(.bottom, 10)
-                Spacer()
-                Text(entry.totalTasks, format: .number)
-                     .font(.title)
-            }
-            ForEach(entry.tasks.prefix(7), id: \.id) {task in
-                Toggle(isOn: task.isCompleted, intent: BackgroundIntent(method: "complete", id: task.id)) {
-                    Text(task.name)
-                        .lineLimit(1)
+        VStack(alignment: .leading, spacing: 1) {
+            switch family {
+            case .systemSmall:
+                HStack(alignment: .firstTextBaseline) {
+                    Text("Habit Tracker")
+                        .font(.default)
+                    Spacer()
+                    Text("\(entry.tasks.count)")
+                        .font(.default)
                 }
-                .toggleStyle(CheckToggleStyle())
-                .frame(maxHeight: 30, alignment: .leading)
+            default:
+                HStack(alignment: .firstTextBaseline) {
+                    Text("Habit Task Tracker")
+                        .font(.title)
+                    Spacer()
+                    Text("\(entry.tasks.count)")
+                        .font(.title)
+                }
+                
             }
+            ForEach(entry.tasks.prefix(7)) { task in
+                            Toggle(isOn: task.isCompleted, intent: BackgroundIntent(method: "complete", id: task.id)) {
+                                Text(task.name)
+                                    .lineLimit(1)
+                            }
+                            .toggleStyle(CheckToggleStyle())
+                            .padding(.vertical, 8) // Vertical padding for row height
+                            .frame(maxWidth: .infinity, alignment: .leading) // Ensure row spans full width
+                            .overlay(alignment: .bottom) { // Apply an overlay at the bottom for the border
+                                Rectangle() // The border itself
+                                    .frame(height: 1) // Set border thickness
+                                    .foregroundColor(.gray.opacity(0.3)) // Set border color and opacity
+                            }
+                        }
+            
         }.frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
     }
 }
@@ -136,7 +156,6 @@ struct HabitWidget: Widget {
         }
         .configurationDisplayName("Tasks Widget")
         .description("Mark off your habits/tasks for today")
-        .supportedFamilies([.systemLarge])
     }
 }
 
