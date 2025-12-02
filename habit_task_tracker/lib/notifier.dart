@@ -169,39 +169,43 @@ class Notification {
       tz.local,
     );
 
-    // Look up habit to get frequency
+    // Look up habit to get recurrences
     final Habit? habit = Habit.fromId(habitId);
-    final frequency = habit?.frequency ?? Frequency.none;
+    for (final r in habit?.recurrences ?? []) {
+      if (scheduledDate.isAfter(r.startDate)) {
+        final frequency = r.freq;
 
-    // Determine the repeat interval based on frequency
-    final DateTimeComponents? repeatInterval;
-    switch (frequency) {
-      case Frequency.daily:
-        repeatInterval = DateTimeComponents.time;
-        break;
-      case Frequency.weekly:
-        repeatInterval = DateTimeComponents.dayOfWeekAndTime;
-        break;
-      case Frequency.monthly:
-        repeatInterval = DateTimeComponents.dayOfMonthAndTime;
-        break;
-      case Frequency.yearly:
-        repeatInterval = DateTimeComponents.dateAndTime;
-        break;
-      case Frequency.none:
-        repeatInterval = null; // Only schedule once
-        break;
+        // Determine the repeat interval based on frequency
+        final DateTimeComponents? repeatInterval;
+        switch (frequency) {
+          case Frequency.daily:
+            repeatInterval = DateTimeComponents.time;
+            break;
+          case Frequency.weekly:
+            repeatInterval = DateTimeComponents.dayOfWeekAndTime;
+            break;
+          case Frequency.monthly:
+            repeatInterval = DateTimeComponents.dayOfMonthAndTime;
+            break;
+          case Frequency.yearly:
+            repeatInterval = DateTimeComponents.dateAndTime;
+            break;
+          default:
+            repeatInterval = null; // Only schedule once
+            break;
+        }
+
+        await flutterLocalNotificationsPlugin.zonedSchedule(
+          habitId.hashCode, // Unique ID for the notification.
+          title, // Notification title.
+          body, // Notification body.
+          tzScheduledDate, // Scheduled time.
+          notificationDetails, // Platform-specific details.
+          androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle, //
+          payload: habitId, // Send habit ID as payload
+          matchDateTimeComponents: repeatInterval,
+        );
+      }
     }
-
-    await flutterLocalNotificationsPlugin.zonedSchedule(
-      habitId.hashCode, // Unique ID for the notification.
-      title, // Notification title.
-      body, // Notification body.
-      tzScheduledDate, // Scheduled time.
-      notificationDetails, // Platform-specific details.
-      androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle, //
-      payload: habitId, // Send habit ID as payload
-      matchDateTimeComponents: repeatInterval,
-    );
   }
 }

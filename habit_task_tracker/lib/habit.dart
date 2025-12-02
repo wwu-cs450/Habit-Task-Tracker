@@ -47,7 +47,6 @@ class Habit {
 
     /// If true, do not use the cached Habit instance for this id.
     bool? skipCache,
-    Frequency? frequency,
     String? description,
   }) {
     if (_habitCache.containsKey(id) && skipCache != true) {
@@ -110,6 +109,7 @@ class Habit {
     String? description,
     List<Recurrence>? recurrences,
   }) {
+    print("recurring habit");
     return Habit(
       id: id,
       name: name,
@@ -227,13 +227,26 @@ Future<void> saveHabit(Habit habit) async {
   await saveData('Habits', habit.gId, habit.toJson());
 }
 
+Future<void> saveTestHabit(Habit habit) async {
+  await saveData('Habits_test', habit.gId, habit.toJson());
+}
+
 Future<Habit> loadHabit(String id) async {
   final data = await loadData('Habits', id);
   return Habit.fromJson(Map<String, dynamic>.from(data));
 }
 
+Future<Habit> loadTestHabit(String id) async {
+  final data = await loadData('Habits_test', id);
+  return Habit.fromJson(Map<String, dynamic>.from(data));
+}
+
 Future<void> deleteHabit(String id) async {
   await deleteData('Habits', id);
+}
+
+Future<void> deleteTestHabit(String id) async {
+  await deleteData('Habits_test', id);
 }
 
 Future<void> changeHabit(
@@ -243,8 +256,9 @@ Future<void> changeHabit(
   DateTime? startDate,
   DateTime? endDate,
   bool? isRecurring,
+  bool test = false,
 }) async {
-  Habit habit = await loadHabit(id);
+  Habit habit = (test ? await loadTestHabit(id) : await loadHabit(id));
   if (name != null) {
     habit.name = name;
   }
@@ -260,11 +274,15 @@ Future<void> changeHabit(
   if (isRecurring != null) {
     habit.isRecurring = isRecurring;
   }
-  await saveHabit(habit);
+  test ? await saveTestHabit(habit) : await saveHabit(habit);
 }
 
-Future<List<DateTime>> getHabitDates(String id, DateTime limit) async {
-  Habit habit = await loadHabit(id);
+Future<List<DateTime>> getHabitDates(
+  String id,
+  DateTime limit, {
+  bool test = false,
+}) async {
+  Habit habit = test ? await loadTestHabit(id) : await loadHabit(id);
   if (habit.isRecurring == false) {
     return [habit.startDate];
   }

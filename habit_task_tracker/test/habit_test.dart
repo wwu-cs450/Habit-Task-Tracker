@@ -4,6 +4,7 @@ import '_setup_mocks.dart';
 
 void main() {
   setUpAll(setupMocks);
+  setUp(clearTestHabitsFolder);
 
   group('Habit Model Test', () {
     test('Create Habit Instance', () {
@@ -27,9 +28,9 @@ void main() {
         endDate: DateTime(2024, 11, 30),
       ).addRecurrence(Frequency.daily);
 
-      await saveHabit(habit);
+      await saveTestHabit(habit);
 
-      Habit habitLate = await loadHabit('habit_2');
+      Habit habitLate = await loadTestHabit('habit_2');
 
       expect(habitLate.gId, 'habit_2');
       expect(habitLate.gName, 'Read Books');
@@ -85,13 +86,13 @@ void main() {
         endDate: DateTime(2024, 10, 5),
       );
 
-      await saveHabit(habit);
+      await saveTestHabit(habit);
 
-      await deleteHabit('habit_8');
+      await deleteTestHabit('habit_8');
       dynamic loadedHabit;
       // expect error from loading deleted habit
       try {
-        loadedHabit = await loadHabit('habit_8');
+        loadedHabit = await loadTestHabit('habit_8');
       } catch (e) {
         loadedHabit = null;
       }
@@ -104,7 +105,8 @@ void main() {
         name: 'Test Habit for Log',
         startDate: DateTime(2024, 5, 5),
         endDate: DateTime(2024, 12, 31),
-      ).addRecurrence(Frequency.daily);
+      );
+      // habit.addRecurrence(Frequency.daily);
 
       expect(habit.log.gId, equals(habit.gId));
       expect(habit.log.timeStamps, isEmpty);
@@ -120,7 +122,7 @@ void main() {
         endDate: DateTime(2024, 12, 1),
       );
 
-      await saveHabit(habit);
+      await saveTestHabit(habit);
 
       await changeHabit(
         'habit_9',
@@ -128,9 +130,10 @@ void main() {
         description: 'Modified Description',
         startDate: DateTime(2024, 7, 1),
         endDate: DateTime(2024, 11, 1),
+        test: true,
       );
 
-      final loadedHabit = await loadHabit('habit_9');
+      final loadedHabit = await loadTestHabit('habit_9');
       expect(loadedHabit.gName, 'Modified Name');
       expect(loadedHabit.description, 'Modified Description');
       expect(loadedHabit.gStartDate, DateTime(2024, 7, 1));
@@ -149,9 +152,9 @@ void main() {
               .addRecurrence(Frequency.weekly, DateTime(2024, 8, 3))
               .addRecurrence(Frequency.weekly, DateTime(2024, 8, 5));
 
-      await saveHabit(habit);
+      await saveTestHabit(habit);
 
-      final loadedHabit = await loadHabit('habit_10');
+      final loadedHabit = await loadTestHabit('habit_10');
       expect(
         loadedHabit.gRecurrences.every(
           (element) => element.freq == Frequency.weekly,
@@ -179,11 +182,12 @@ void main() {
               .addRecurrence(Frequency.daily, DateTime(2024, 10, 1, 8, 0, 0))
               .addRecurrence(Frequency.daily, DateTime(2024, 10, 1, 20, 0, 0));
 
-      await saveHabit(habit);
+      await saveTestHabit(habit);
 
       final habitDates = await getHabitDates(
         'habit_12',
         DateTime(2024, 10, 5, 23, 59, 59),
+        test: true,
       );
       expect(habitDates.length, 10);
       expect(
@@ -214,9 +218,13 @@ void main() {
               .addRecurrence(Frequency.weekly, DateTime(2024, 9, 1))
               .addRecurrence(Frequency.weekly, DateTime(2024, 9, 3));
 
-      await saveHabit(habit);
+      await saveTestHabit(habit);
 
-      final habitDates = await getHabitDates('habit_11', DateTime(2024, 9, 25));
+      final habitDates = await getHabitDates(
+        'habit_11',
+        DateTime(2024, 9, 25),
+        test: true,
+      );
       expect(habitDates.length, 8);
       expect(
         habitDates,
@@ -240,9 +248,13 @@ void main() {
         endDate: DateTime(2024, 11, 15),
       );
 
-      await saveHabit(habit);
+      await saveTestHabit(habit);
 
-      final habitDates = await getHabitDates('habit_13', DateTime(2024, 12, 1));
+      final habitDates = await getHabitDates(
+        'habit_13',
+        DateTime(2024, 12, 1),
+        test: true,
+      );
       expect(habitDates.length, 1);
       expect(habitDates, containsAll([DateTime(2024, 11, 15)]));
     });
@@ -258,9 +270,13 @@ void main() {
               .addRecurrence(Frequency.monthly, DateTime(2024, 1, 15))
               .addRecurrence(Frequency.monthly, DateTime(2024, 1, 30));
 
-      await saveHabit(habit);
+      await saveTestHabit(habit);
 
-      final habitDates = await getHabitDates('habit_14', DateTime(2024, 6, 30));
+      final habitDates = await getHabitDates(
+        'habit_14',
+        DateTime(2024, 6, 30),
+        test: true,
+      );
       expect(habitDates.length, 11);
       expect(
         habitDates,
@@ -288,11 +304,12 @@ void main() {
         endDate: DateTime(2024, 2, 29),
       ).addRecurrence(Frequency.yearly);
 
-      await saveHabit(habit);
+      await saveTestHabit(habit);
 
       final habitDates = await getHabitDates(
         'habit_15',
         DateTime(2024, 12, 31),
+        test: true,
       );
       expect(habitDates.length, 5);
       expect(
