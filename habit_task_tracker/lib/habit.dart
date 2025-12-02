@@ -1,5 +1,6 @@
 import 'package:habit_task_tracker/backend.dart';
 import 'package:habit_task_tracker/log.dart';
+import 'package:habit_task_tracker/recurrence.dart';
 import 'package:jiffy/jiffy.dart';
 
 enum Frequency { daily, weekly, monthly, yearly, none }
@@ -24,16 +25,16 @@ class Habit {
   DateTime startDate;
   DateTime endDate;
   bool isRecurring;
-  Frequency? frequency;
-  List<DateTime>? intervals;
+  List<Recurrence> recurrences;
   Log log;
 
-  Habit._({
+  Habit({
     required String id,
     required this.name,
     required this.startDate,
     required this.endDate,
     required this.isRecurring,
+    required this.recurrences,
     this.description,
   }) : _id = id,
        log = createLog(id, description);
@@ -44,14 +45,14 @@ class Habit {
     required DateTime startDate,
     required DateTime endDate,
     String? description,
-    bool isRecurring = false,
   }) {
-    return Habit._(
+    return Habit(
       id: id,
       name: name,
       startDate: startDate,
       endDate: endDate,
-      isRecurring: isRecurring,
+      isRecurring: false,
+      recurrences: <Recurrence>[],
       description: description,
     );
   }
@@ -59,24 +60,20 @@ class Habit {
   factory Habit.recurring({
     required String id,
     required String name,
-    required Frequency frequency,
-    List<DateTime>? intervals,
-    String? description,
     required DateTime startDate,
     required DateTime endDate,
-    bool isRecurring = true,
+    String? description,
+    List<Recurrence>? recurrences,
   }) {
-    Habit habit = Habit._(
+    return Habit(
       id: id,
       name: name,
       startDate: startDate,
       endDate: endDate,
-      isRecurring: isRecurring,
+      isRecurring: true,
+      recurrences: recurrences ?? <Recurrence>[],
       description: description,
     );
-    habit.frequency = frequency;
-    habit.intervals = intervals ?? [DateTime.now()];
-    return habit;
   }
 
   String get gId => _id;
@@ -89,9 +86,19 @@ class Habit {
 
   bool get gIsRecurring => isRecurring;
 
-  Frequency get gFrequency => frequency ?? Frequency.none;
+  List<Recurrence> get gRecurrences => recurrences;
 
   dynamic get gCompleted => _completed;
+
+  Habit addRecurrence(Frequency frequency, [DateTime? startDate]) {
+    if (isRecurring == false) {
+      throw Exception("Can't add recurrence to a one-time habit");
+    }
+    recurrences.add(
+      Recurrence(freq: frequency, startDate: startDate ?? this.startDate),
+    );
+    return this;
+  }
 
   Map<String, dynamic> toJson() {
     return {
@@ -101,25 +108,27 @@ class Habit {
       'startDate': startDate.toIso8601String(),
       'endDate': endDate.toIso8601String(),
       'isRecurring': isRecurring,
-      'frequency': gFrequency.toString(),
-      'intervals': intervals?.map((e) => e.toIso8601String()).toList(),
+      'recurrences': recurrences.map((r) => r.toJson()).toList(),
     };
   }
 
   factory Habit.fromJson(Map<String, dynamic> json) {
     if (json['isRecurring'] == true) {
-      return Habit.recurring(
+      final habit = Habit.recurring(
         id: json['id'],
         name: json['name'],
         description: json['description'],
         startDate: DateTime.parse(json['startDate']),
         endDate: DateTime.parse(json['endDate']),
-        isRecurring: json['isRecurring'],
-        frequency: frequencyMap[json['frequency']] ?? Frequency.none,
-        intervals: (json['intervals'] as List<dynamic>?)
-            ?.map((e) => DateTime.parse(e as String))
+      );
+      habit.recurrences.addAll(
+        json['recurrences']
+            .map<Recurrence>(
+              (r) => Recurrence.fromJson(Map<String, dynamic>.from(r)),
+            )
             .toList(),
       );
+      return habit;
     } else {
       return Habit.oneTime(
         id: json['id'],
@@ -127,7 +136,6 @@ class Habit {
         description: json['description'],
         startDate: DateTime.parse(json['startDate']),
         endDate: DateTime.parse(json['endDate']),
-        isRecurring: json['isRecurring'],
       );
     }
   }
@@ -157,7 +165,6 @@ Future<void> changeHabit(
   DateTime? startDate,
   DateTime? endDate,
   bool? isRecurring,
-  Frequency? frequency,
 }) async {
   Habit habit = await loadHabit(id);
   if (name != null) {
@@ -175,103 +182,111 @@ Future<void> changeHabit(
   if (isRecurring != null) {
     habit.isRecurring = isRecurring;
   }
-  if (frequency != null) {
-    habit.frequency = frequency;
-  }
   await saveHabit(habit);
 }
 
 Future<List<DateTime>> getHabitDates(String id, DateTime limit) async {
-
   Habit habit = await loadHabit(id);
   if (habit.isRecurring == false) {
     return [habit.startDate];
   }
-  List<DateTime> dates = [];
-  bool end = true;
-  int totalDays = 0;
-  int totalMonths = 0;
-  int totalYears = 0;
+  bool end = false;
 
-while (end) {
-    switch (habit.frequency) {
+  List<DateTime> dates = [];
+  for (Recurrence recurrence in habit.recurrences) {
+    switch (recurrence.freq) {
       case Frequency.daily:
-        for (DateTime date in habit.intervals!) {
-          DateTime nextDate = DateTime(
-            habit.startDate.year,
-            habit.startDate.month,
-            habit.startDate.day,
-            date.hour,
-            date.minute,
-          );
-          nextDate = nextDate.add(Duration(days: totalDays));
-          if (nextDate.isAfter(habit.endDate) || nextDate.isAfter(limit)) {
-            end = false;
+        DateTime nextDate = DateTime(
+          habit.startDate.year,
+          habit.startDate.month,
+          habit.startDate.day,
+          recurrence.startDate.hour,
+          recurrence.startDate.minute,
+        );
+        end = false;
+        var numDays = 0;
+
+        while (!end) {
+          final newDate = nextDate.add(Duration(days: numDays));
+          if (newDate.isAfter(habit.endDate) || newDate.isAfter(limit)) {
+            end = true;
             break;
           }
-          dates.add(nextDate);
+          dates.add(newDate);
+          numDays++;
         }
-        totalDays += 1;
         break;
       case Frequency.weekly:
-        for (DateTime date in habit.intervals!) {
-          DateTime nextDate = DateTime(
-            habit.startDate.year,
-            habit.startDate.month,
-            date.day,
-            date.hour,
-            date.minute,
-          );
-          nextDate = nextDate.add(Duration(days: totalDays));
-          if (nextDate.isAfter(habit.endDate) || nextDate.isAfter(limit)) {
-            end = false;
+        DateTime nextDate = DateTime(
+          habit.startDate.year,
+          habit.startDate.month,
+          recurrence.startDate.day,
+          recurrence.startDate.hour,
+          recurrence.startDate.minute,
+        );
+        end = false;
+        var numWeeks = 0;
+
+        while (!end) {
+          final newDate = nextDate.add(Duration(days: 7 * numWeeks));
+          if (newDate.isAfter(habit.endDate) || newDate.isAfter(limit)) {
+            end = true;
             break;
           }
-          dates.add(nextDate);
+          dates.add(newDate);
+          numWeeks++;
         }
-        totalDays += 7;
         break;
       case Frequency.monthly:
-        for (DateTime date in habit.intervals!) {
-          DateTime nextDate = DateTime(
-            habit.startDate.year,
-            habit.startDate.month,
-            date.day,
-            date.hour,
-            date.minute,
-          );
-          nextDate = Jiffy.parseFromDateTime(nextDate).add(months: totalMonths).dateTime;
-          if (nextDate.isAfter(habit.endDate) || nextDate.isAfter(limit)) {
-            end = false;
+        DateTime nextDate = DateTime(
+          habit.startDate.year,
+          habit.startDate.month,
+          recurrence.startDate.day,
+          recurrence.startDate.hour,
+          recurrence.startDate.minute,
+        );
+        end = false;
+        var numMonths = 0;
+
+        while (!end) {
+          final newDate = Jiffy.parseFromDateTime(
+            nextDate,
+          ).add(months: numMonths).dateTime;
+          if (newDate.isAfter(habit.endDate) || newDate.isAfter(limit)) {
+            end = true;
             break;
           }
-          dates.add(nextDate);
+          dates.add(newDate);
+          numMonths++;
         }
-        totalMonths += 1;
         break;
       case Frequency.yearly:
-        for (DateTime date in habit.intervals!) {
-          DateTime nextDate = DateTime(
-            habit.startDate.year,
-            date.month,
-            date.day,
-            date.hour,
-            date.minute,
-          );
-          nextDate = Jiffy.parseFromDateTime(nextDate).add(years: totalYears).dateTime;
-          if (nextDate.isAfter(habit.endDate) || nextDate.isAfter(limit)) {
-            end = false;
+        DateTime nextDate = DateTime(
+          habit.startDate.year,
+          recurrence.startDate.month,
+          recurrence.startDate.day,
+          recurrence.startDate.hour,
+          recurrence.startDate.minute,
+        );
+        bool end = false;
+        var numYears = 0;
+
+        while (!end) {
+          final newDate = Jiffy.parseFromDateTime(
+            nextDate,
+          ).add(years: numYears).dateTime;
+          if (newDate.isAfter(habit.endDate) || newDate.isAfter(limit)) {
+            end = true;
             break;
           }
-          dates.add(nextDate);
+          dates.add(newDate);
+          numYears++;
         }
-        totalYears += 1;
         break;
       default:
+        end = true;
         break;
     }
-    
-
-  } 
+  }
   return dates;
 }

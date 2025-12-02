@@ -120,13 +120,12 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
   // Create habit method
   Future<void> createHabit(String title, String description) async {
     final id = DateTime.now().millisecondsSinceEpoch.toString();
-    final habit = Habit(
+    final habit = Habit.oneTime(
       id: id,
       name: title,
       description: description,
       startDate: DateTime.now(),
       endDate: DateTime.now().add(const Duration(days: 1)),
-      isRecurring: false,
     );
 
     setState(() {
