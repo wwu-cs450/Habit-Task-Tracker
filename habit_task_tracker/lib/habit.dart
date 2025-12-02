@@ -109,7 +109,6 @@ class Habit {
     String? description,
     List<Recurrence>? recurrences,
   }) {
-    print("recurring habit");
     return Habit(
       id: id,
       name: name,
