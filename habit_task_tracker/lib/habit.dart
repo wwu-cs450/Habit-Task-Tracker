@@ -1,5 +1,9 @@
 import 'package:habit_task_tracker/backend.dart';
 import 'package:habit_task_tracker/log.dart';
+import 'package:habit_task_tracker/notifier.dart' as notifier;
+import 'package:duration/duration.dart';
+import 'package:logger/logger.dart';
+import 'package:table_calendar/table_calendar.dart';
 import 'package:habit_task_tracker/recurrence.dart';
 import 'package:jiffy/jiffy.dart';
 
@@ -12,7 +16,6 @@ Map<String, Frequency> frequencyMap = {
   'Frequency.yearly': Frequency.yearly,
   'Frequency.none': Frequency.none,
 };
-
 Log createLog(String id, String? description) {
   return Log(habitId: id, notes: description);
 }
@@ -27,8 +30,47 @@ class Habit {
   bool isRecurring;
   List<Recurrence> recurrences;
   Log log;
+  List<DateTime> completedDates;
+  List<notifier.Notification> notifications;
+  // Should only be accessed from the main isolate
+  // for thread safety
+  static final Map<String, Habit> _habitCache = {};
+  static final logger = Logger();
+  factory Habit({
+    required String id,
+    required String name,
+    required DateTime startDate,
+    required DateTime endDate,
+    required bool isRecurring,
+    required List<Recurrence> recurrences,
+    List<DateTime>? completedDates,
 
-  Habit({
+    /// If true, do not use the cached Habit instance for this id.
+    bool? skipCache,
+    Frequency? frequency,
+    String? description,
+  }) {
+    if (_habitCache.containsKey(id) && skipCache != true) {
+      return _habitCache[id]!;
+    }
+    final habit = Habit._internal(
+      id: id,
+      name: name,
+      startDate: startDate,
+      endDate: endDate,
+      isRecurring: isRecurring,
+      recurrences: recurrences,
+      description: description,
+      notifications: [],
+    );
+    _habitCache[id] = habit;
+    return habit;
+  }
+  static Habit? fromId(String id) {
+    return _habitCache[id];
+  }
+
+  Habit._internal({
     required String id,
     required this.name,
     required this.startDate,
@@ -36,8 +78,11 @@ class Habit {
     required this.isRecurring,
     required this.recurrences,
     this.description,
+    required this.notifications,
+    List<DateTime>? completedDates, // optional in constructor
   }) : _id = id,
-       log = createLog(id, description);
+       log = createLog(id, description),
+       completedDates = completedDates ?? [];
 
   factory Habit.oneTime({
     required String id,
@@ -77,13 +122,9 @@ class Habit {
   }
 
   String get gId => _id;
-
   String get gName => name;
-
   DateTime get gStartDate => startDate;
-
   DateTime get gEndDate => endDate;
-
   bool get gIsRecurring => isRecurring;
 
   List<Recurrence> get gRecurrences => recurrences;
@@ -109,41 +150,78 @@ class Habit {
       'endDate': endDate.toIso8601String(),
       'isRecurring': isRecurring,
       'recurrences': recurrences.map((r) => r.toJson()).toList(),
+      'completedDates': completedDates.map((d) => d.toIso8601String()).toList(),
     };
   }
 
   factory Habit.fromJson(Map<String, dynamic> json) {
-    if (json['isRecurring'] == true) {
-      final habit = Habit.recurring(
-        id: json['id'],
-        name: json['name'],
-        description: json['description'],
-        startDate: DateTime.parse(json['startDate']),
-        endDate: DateTime.parse(json['endDate']),
-      );
-      habit.recurrences.addAll(
-        json['recurrences']
-            .map<Recurrence>(
-              (r) => Recurrence.fromJson(Map<String, dynamic>.from(r)),
-            )
-            .toList(),
-      );
-      return habit;
-    } else {
-      return Habit.oneTime(
-        id: json['id'],
-        name: json['name'],
-        description: json['description'],
-        startDate: DateTime.parse(json['startDate']),
-        endDate: DateTime.parse(json['endDate']),
-      );
+    return Habit(
+      id: json['id'],
+      name: json['name'],
+      description: json['description'],
+      startDate: DateTime.parse(json['startDate']),
+      endDate: DateTime.parse(json['endDate']),
+      isRecurring: json['isRecurring'],
+      recurrences: json['recurrences']
+          .map<Recurrence>(
+            (r) => Recurrence.fromJson(Map<String, dynamic>.from(r)),
+          )
+          .toList(),
+      completedDates: (json['completedDates'] as List<dynamic>?)
+          ?.map((e) => DateTime.parse(e))
+          .toList(),
+    )
+    // Following line can be uncommented once
+    // `withNotification()` is idempotent.
+    // For now, behavior is unchanged
+    // .withNotification()
+    ;
+  }
+  // Schedule notification for a habit. Automatically
+  // handles scheduling, recurrence, etc. This function
+  // is not idempotent *yet*; that's a stretch goal.
+  //
+  // Intended to be used like this:
+  //   final habit = Habit(...).withNotification();
+  Habit withNotification({
+    Duration reminderLeadTime = const Duration(hours: 1),
+  }) {
+    // Ensure that startDate is in the future
+    // Might be smart to do this in the initializer
+    final DateTime notifDateTime = _earliestDate(
+      startDate.add(reminderLeadTime), // Task time - lead time
+      DateTime.now().add(
+        Duration(seconds: 1),
+      ), // At least 1 second in the future
+    );
+    final notification = notifier.Notification(
+      this,
+      'Reminder for $name',
+      'Don\'t forget to complete your habit!\nIt\'s due in ${reminderLeadTime.pretty(abbreviated: false)}.',
+    );
+    notifications.add(notification);
+    // `Notification.showScheduled` handles recurrences automatically
+    notification.showScheduled(notifDateTime).catchError((e, stack) {
+      logger.e('Failed to schedule notification for habit with ID $gId: $e');
+    });
+    return this;
+  }
+
+  DateTime _earliestDate(DateTime a, DateTime b) {
+    return a.isBefore(b) ? a : b;
+  }
+
+  void complete([DateTime? day]) {
+    final d = day ?? DateTime.now();
+    if (!completedDates.any((x) => isSameDay(x, d))) {
+      completedDates.add(d);
     }
   }
 
-  void complete() {
-    //updateTimeStamps(DateTime.now());
-  }
+  // void complete() {
+  //updateTimeStamps(DateTime.now());
 }
+// }
 
 Future<void> saveHabit(Habit habit) async {
   await saveData('Habits', habit.gId, habit.toJson());

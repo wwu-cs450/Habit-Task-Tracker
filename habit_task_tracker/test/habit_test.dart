@@ -1,7 +1,10 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:habit_task_tracker/habit.dart';
+import '_setup_mocks.dart';
 
 void main() {
+  setUpAll(setupMocks);
+
   group('Habit Model Test', () {
     test('Create Habit Instance', () {
       final habit = Habit.recurring(
