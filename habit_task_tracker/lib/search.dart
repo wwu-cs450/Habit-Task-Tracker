@@ -35,7 +35,7 @@ Future<List<Habit>> searchHabitsBetweenDates(
   DateTime date2,
 ) async {
   List<Habit> results = [];
-  final habitsData = await collectionHabits?.get();
+  final habitsData = await collectionHabits.get();
   if (habitsData == null) {
     return results;
   }
