@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:habit_task_tracker/notifier.dart' as notifier;
+import 'package:habit_task_tracker/recurrence.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'habit.dart';
 import 'main_helpers.dart';
@@ -104,6 +105,20 @@ class _MyHomePageState extends State<MyHomePage> {
 
   // Format DateTime to Date string
   String _format(DateTime d) => d.toIso8601String().split('T').first;
+
+  // Format recurrence details to string
+  String _recurrenceText(List<Recurrence> recurrences) {
+    if (recurrences.isEmpty) {
+      return 'No';
+    }
+    // Get frequency strings
+    return recurrences
+        .map((f) => frequencyToString(f.freq))
+        // Unique frequencies only
+        .toSet()
+        .toList()
+        .join(', ');
+  }
 
   // Main body build method
   @override
@@ -343,7 +358,7 @@ class _MyHomePageState extends State<MyHomePage> {
                                         const SizedBox(width: 6),
                                         Flexible(
                                           child: Text(
-                                            'Recurring: ${_habits[index].gIsRecurring ? "Yes" : "No"}', // TODO: update to show recurrence details
+                                            'Recurring: ${_habits[index].gIsRecurring ? _recurrenceText(_habits[index].gRecurrences) : "No"}',
                                           ),
                                         ),
                                       ],
