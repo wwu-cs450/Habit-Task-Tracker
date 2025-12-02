@@ -161,11 +161,13 @@ class Habit {
       startDate: DateTime.parse(json['startDate']),
       endDate: DateTime.parse(json['endDate']),
       isRecurring: json['isRecurring'],
-      recurrences: json['recurrences']
-          .map<Recurrence>(
-            (r) => Recurrence.fromJson(Map<String, dynamic>.from(r)),
-          )
-          .toList(),
+      recurrences:
+          (json['recurrences'] as List<dynamic>?)
+              ?.map<Recurrence>(
+                (r) => Recurrence.fromJson(Map<String, dynamic>.from(r)),
+              )
+              .toList() ??
+          [],
       completedDates: (json['completedDates'] as List<dynamic>?)
           ?.map((e) => DateTime.parse(e))
           .toList(),
@@ -363,7 +365,7 @@ Future<List<DateTime>> getHabitDates(
           recurrence.startDate.hour,
           recurrence.startDate.minute,
         );
-        bool end = false;
+        end = false;
         var numYears = 0;
 
         while (!end) {
