@@ -91,7 +91,9 @@ void main() {
         'startDate': '2024-04-04T00:00:00.000',
         'endDate': '2024-09-30T00:00:00.000',
         'isRecurring': true,
-        'frequency': 'Frequency.daily',
+        'recurrences': [
+          {'freq': 'Frequency.daily'},
+        ],
       };
       final habit = Habit.fromJson(json);
       expect(habit.gId, isNot(equals('1234567890')));
@@ -99,25 +101,45 @@ void main() {
       expect(habit.gStartDate, DateTime(2024, 4, 4));
       expect(habit.gEndDate, DateTime(2024, 9, 30));
       expect(habit.gIsRecurring, true);
-      expect(habit.gFrequency, Frequency.daily);
+      expect(habit.gRecurrences.first.freq, Frequency.daily);
+    });
+
+    test('Conversion from old ID format to new ID format', () {
+      // create a habit with an old ID format using JSON
+      final json = {
+        'id': '1234567890',
+        'name': 'Meditate',
+        'startDate': '2024-04-04T00:00:00.000',
+        'endDate': '2024-09-30T00:00:00.000',
+        'isRecurring': true,
+        'recurrences': [
+          {'freq': 'Frequency.daily'},
+        ],
+      };
+      final habit = Habit.fromJson(json);
+      expect(habit.gId, isNot(equals('1234567890')));
+      expect(habit.gName, 'Meditate');
+      expect(habit.gStartDate, DateTime(2024, 4, 4));
+      expect(habit.gEndDate, DateTime(2024, 9, 30));
+      expect(habit.gIsRecurring, true);
+      expect(habit.gRecurrences.first.freq, Frequency.daily);
     });
 
     test('Delete Habit Test', () async {
-      final id = Uuid.generate().toString();
       final habit = Habit.oneTime(
-        id: id,
         name: 'Habit to Delete',
         startDate: DateTime(2024, 5, 5),
         endDate: DateTime(2024, 10, 5),
       );
 
+      final habitId = habit.gId;
       await saveTestHabit(habit);
 
-      await deleteTestHabit(id);
+      await deleteTestHabit(habitId);
       dynamic loadedHabit;
       // expect error from loading deleted habit
       try {
-        loadedHabit = await loadTestHabit(id);
+        loadedHabit = await loadTestHabit(habitId);
       } catch (e) {
         loadedHabit = null;
       }
@@ -141,17 +163,17 @@ void main() {
 
     test('Change Habit name, discription, and dates', () async {
       final habit = Habit.oneTime(
-        id: 'habit_9',
         name: 'Initial Name',
         description: 'Initial Description',
         startDate: DateTime(2024, 6, 1),
         endDate: DateTime(2024, 12, 1),
       );
 
+      final habitId = habit.gId;
       await saveTestHabit(habit);
 
       await changeHabit(
-        'habit_9',
+        habitId,
         name: 'Modified Name',
         description: 'Modified Description',
         startDate: DateTime(2024, 7, 1),
@@ -159,7 +181,7 @@ void main() {
         test: true,
       );
 
-      final loadedHabit = await loadTestHabit('habit_9');
+      final loadedHabit = await loadTestHabit(habitId);
       expect(loadedHabit.gName, 'Modified Name');
       expect(loadedHabit.description, 'Modified Description');
       expect(loadedHabit.gStartDate, DateTime(2024, 7, 1));
@@ -169,7 +191,6 @@ void main() {
     test('Add intervals to habit', () async {
       final habit =
           Habit.recurring(
-                id: 'habit_10',
                 name: 'Interval Habit',
                 startDate: DateTime(2024, 8, 1),
                 endDate: DateTime(2024, 12, 31),
@@ -178,9 +199,10 @@ void main() {
               .addRecurrence(Frequency.weekly, DateTime(2024, 8, 3))
               .addRecurrence(Frequency.weekly, DateTime(2024, 8, 5));
 
+      final habitId = habit.gId;
       await saveTestHabit(habit);
 
-      final loadedHabit = await loadTestHabit('habit_10');
+      final loadedHabit = await loadTestHabit(habitId);
       expect(
         loadedHabit.gRecurrences.every(
           (element) => element.freq == Frequency.weekly,
@@ -200,7 +222,6 @@ void main() {
     test("Get habits from habit (daily)", () async {
       final habit =
           Habit.recurring(
-                id: 'habit_12',
                 name: 'Recurring Habit',
                 startDate: DateTime(2024, 10, 1),
                 endDate: DateTime(2024, 10, 10),
@@ -208,10 +229,11 @@ void main() {
               .addRecurrence(Frequency.daily, DateTime(2024, 10, 1, 8, 0, 0))
               .addRecurrence(Frequency.daily, DateTime(2024, 10, 1, 20, 0, 0));
 
+      final habitId = habit.gId;
       await saveTestHabit(habit);
 
       final habitDates = await getHabitDates(
-        'habit_12',
+        habitId,
         DateTime(2024, 10, 5, 23, 59, 59),
         test: true,
       );
@@ -236,7 +258,6 @@ void main() {
     test("Get habits from habit (weekly)", () async {
       final habit =
           Habit.recurring(
-                id: 'habit_11',
                 name: 'Weekly Habit',
                 startDate: DateTime(2024, 9, 1),
                 endDate: DateTime(2024, 9, 30),
@@ -244,10 +265,11 @@ void main() {
               .addRecurrence(Frequency.weekly, DateTime(2024, 9, 1))
               .addRecurrence(Frequency.weekly, DateTime(2024, 9, 3));
 
+      final habitId = habit.gId;
       await saveTestHabit(habit);
 
       final habitDates = await getHabitDates(
-        'habit_11',
+        habitId,
         DateTime(2024, 9, 25),
         test: true,
       );
@@ -268,16 +290,16 @@ void main() {
     });
     test("Get habits from habit (non-recurring)", () async {
       final habit = Habit.oneTime(
-        id: 'habit_13',
         name: 'One-time Habit',
         startDate: DateTime(2024, 11, 15),
         endDate: DateTime(2024, 11, 15),
       );
 
+      final habitId = habit.gId;
       await saveTestHabit(habit);
 
       final habitDates = await getHabitDates(
-        'habit_13',
+        habitId,
         DateTime(2024, 12, 1),
         test: true,
       );
@@ -288,7 +310,6 @@ void main() {
     test("Get habits from habit (monthly)", () async {
       final habit =
           Habit.recurring(
-                id: 'habit_14',
                 name: 'Monthly Habit',
                 startDate: DateTime(2024, 1, 15),
                 endDate: DateTime(2024, 6, 15),
@@ -296,10 +317,11 @@ void main() {
               .addRecurrence(Frequency.monthly, DateTime(2024, 1, 15))
               .addRecurrence(Frequency.monthly, DateTime(2024, 1, 30));
 
+      final habitId = habit.gId;
       await saveTestHabit(habit);
 
       final habitDates = await getHabitDates(
-        'habit_14',
+        habitId,
         DateTime(2024, 6, 30),
         test: true,
       );
@@ -324,16 +346,16 @@ void main() {
 
     test("Get habits from habit (yearly)", () async {
       final habit = Habit.recurring(
-        id: 'habit_15',
         name: 'Yearly Habit',
         startDate: DateTime(2020, 2, 29),
         endDate: DateTime(2024, 2, 29),
       ).addRecurrence(Frequency.yearly);
 
+      final habitId = habit.gId;
       await saveTestHabit(habit);
 
       final habitDates = await getHabitDates(
-        'habit_15',
+        habitId,
         DateTime(2024, 12, 31),
         test: true,
       );
