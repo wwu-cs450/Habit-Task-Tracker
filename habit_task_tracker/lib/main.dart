@@ -4,7 +4,9 @@ import 'package:habit_task_tracker/recurrence.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'habit.dart';
 import 'main_helpers.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'calendar.dart';
+import 'timer.dart';
 import 'uuid.dart';
 
 // I got some help from GitHub CoPilot with this code. I also got some ideas from
@@ -33,6 +35,7 @@ class MyApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(
           seedColor: const Color.fromARGB(255, 0, 0, 0),
         ),
+        textTheme: GoogleFonts.merriweatherTextTheme(),
         useMaterial3: true,
       ),
       home: const MyHomePage(title: 'Habits'),
@@ -126,6 +129,7 @@ class _MyHomePageState extends State<MyHomePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       key: _scaffoldKey,
+      backgroundColor: Colors.white,
       // Top App Bar (Header)
       appBar: AppBar(
         // Hamburger menu button to open navigation menu
@@ -133,7 +137,8 @@ class _MyHomePageState extends State<MyHomePage> {
           icon: const Icon(Icons.menu),
           onPressed: () => _scaffoldKey.currentState?.openDrawer(),
         ),
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
+        backgroundColor: const Color.fromARGB(255, 221, 146, 181),
+        // backgroundColor: Theme.of(context).colorScheme.inversePrimary,
         title: Text(widget.title),
       ),
 
@@ -172,6 +177,18 @@ class _MyHomePageState extends State<MyHomePage> {
               ),
 
               ListTile(
+                leading: const Icon(Icons.timer),
+                title: const Text('Timer'),
+                onTap: () {
+                  Navigator.pop(context);
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const TimerPage()),
+                  );
+                },
+              ),
+
+              ListTile(
                 leading: const Icon(Icons.calendar_today),
                 title: const Text('Calendar'),
                 onTap: () {
@@ -206,7 +223,7 @@ class _MyHomePageState extends State<MyHomePage> {
                       minHeight: 10,
                       // NEED TO DECIDE WHAT COLORS TO USE HERE
                       backgroundColor: Colors.grey.shade300,
-                      color: Colors.greenAccent,
+                      color: const Color.fromARGB(255, 28, 164, 255),
                     ),
                   ),
                   const SizedBox(width: 12),
