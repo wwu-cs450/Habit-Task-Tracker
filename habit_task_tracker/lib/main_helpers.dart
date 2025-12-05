@@ -133,7 +133,6 @@ Future<Habit> createAndPersistHabit(
       description: description,
       startDate: s,
       endDate: e,
-      recurrences: [Recurrence(freq: effectiveFrequency)],
     ).withNotification();
   } else {
     habit = Habit.oneTime(
