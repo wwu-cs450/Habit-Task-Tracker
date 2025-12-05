@@ -331,7 +331,7 @@ Future<List<DateTime>> getHabitDates(
         DateTime nextDate = DateTime(
           habit.startDate.year,
           habit.startDate.month,
-          recurrence.startDate.day,
+          recurrence.startDate.weekday,
           recurrence.startDate.hour,
           recurrence.startDate.minute,
         );
