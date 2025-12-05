@@ -8,7 +8,6 @@ import 'package:logger/logger.dart';
 import 'package:table_calendar/table_calendar.dart';
 import 'package:habit_task_tracker/recurrence.dart';
 import 'package:jiffy/jiffy.dart';
-import 'package:uuid/uuid.dart' as uuid_package;
 
 enum Frequency { daily, weekly, monthly, yearly, none }
 

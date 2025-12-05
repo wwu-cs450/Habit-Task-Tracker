@@ -141,7 +141,7 @@ void main() {
       expect(habit.gStartDate, DateTime(2024, 4, 4));
       expect(habit.gEndDate, DateTime(2024, 9, 30));
       expect(habit.gIsRecurring, true);
-      expect(habit.gFrequency, Frequency.daily);
+      expect(habit.gRecurrences.first.freq, Frequency.daily);
     });
 
     test('Delete Habit Test', () async {

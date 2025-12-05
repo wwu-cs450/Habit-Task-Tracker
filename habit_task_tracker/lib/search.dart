@@ -39,7 +39,7 @@ Future<List<Habit>> searchHabitsBetweenDates(
   List<Habit> results = [];
   final habitsData = await (test
       ? collectionTestHabits.get()
-      : collectionHabits?.get());
+      : collectionHabits.get());
   if (habitsData == null) {
     return results;
   }
@@ -59,7 +59,7 @@ Future<List<Habit>> searchHabitsByName(String name, {bool test = false}) async {
   List<Habit> results = [];
   final habitsData = await (test
       ? collectionTestHabits.get()
-      : collectionHabits?.get());
+      : collectionHabits.get());
   if (habitsData == null) {
     return results;
   }
@@ -80,7 +80,7 @@ Future<List<Habit>> searchHabitsByDescription(
   List<Habit> results = [];
   final habitsData = await (test
       ? collectionTestHabits.get()
-      : collectionHabits?.get());
+      : collectionHabits.get());
   if (habitsData == null) {
     return results;
   }
@@ -104,7 +104,7 @@ Future<List<Habit>> searchAllHabits({bool test = false}) async {
   List<Habit> results = [];
   final habitsData = await (test
       ? collectionTestHabits.get()
-      : collectionHabits?.get());
+      : collectionHabits.get());
   if (habitsData == null) {
     return results;
   }
