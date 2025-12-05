@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:habit_task_tracker/log.dart';
 import 'package:habit_task_tracker/notifier.dart' as notifier;
+import 'package:habit_task_tracker/recurrence.dart';
 import 'package:habit_task_tracker/uuid.dart';
 
 // I got help from Copilot to write the following functions.
@@ -124,14 +125,24 @@ Future<Habit> createAndPersistHabit(
       ? (frequency ?? Frequency.daily)
       : (frequency ?? Frequency.none);
 
-  final habit = Habit(
-    name: title,
-    description: description,
-    startDate: s,
-    endDate: e,
-    isRecurring: isRecurring,
-    recurrences: [],
-  ).withNotification();
+  final Habit habit;
+
+  if (isRecurring) {
+    habit = Habit.recurring(
+      name: title,
+      description: description,
+      startDate: s,
+      endDate: e,
+      recurrences: [Recurrence(freq: effectiveFrequency)],
+    ).addRecurrence(effectiveFrequency).withNotification();
+  } else {
+    habit = Habit.oneTime(
+      name: title,
+      description: description,
+      startDate: s,
+      endDate: e,
+    ).withNotification();
+  }
 
   if (isRecurring) {
     habit.addRecurrence(effectiveFrequency);

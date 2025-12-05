@@ -89,7 +89,7 @@ class Habit {
        completedDates = completedDates ?? [];
 
   factory Habit.oneTime({
-    required String id,
+    String? id,
     required String name,
     required DateTime startDate,
     required DateTime endDate,
@@ -107,7 +107,7 @@ class Habit {
   }
 
   factory Habit.recurring({
-    required String id,
+    String? id,
     required String name,
     required DateTime startDate,
     required DateTime endDate,
