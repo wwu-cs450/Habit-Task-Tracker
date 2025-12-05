@@ -175,7 +175,7 @@ class _MyHomePageState extends State<MyHomePage> {
                   Navigator.pop(context);
                 },
               ),
-            
+
               ListTile(
                 leading: const Icon(Icons.timer),
                 title: const Text('Timer'),
@@ -183,9 +183,7 @@ class _MyHomePageState extends State<MyHomePage> {
                   Navigator.pop(context);
                   Navigator.push(
                     context,
-                    MaterialPageRoute(
-                      builder: (_) => const TimerPage(),
-                    ),
+                    MaterialPageRoute(builder: (_) => const TimerPage()),
                   );
                 },
               ),
