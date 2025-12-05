@@ -182,7 +182,7 @@ void main() {
       expect(habit.log.notes, isNull);
     });
 
-    test('Change Habit name, discription, and dates', () async {
+    test('Change Habit name, description, and dates', () async {
       final habit = Habit.oneTime(
         name: 'Initial Name',
         description: 'Initial Description',
