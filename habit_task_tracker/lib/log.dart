@@ -1,17 +1,18 @@
 import 'dart:math';
 import 'package:habit_task_tracker/backend.dart';
-import 'package:habit_task_tracker/habit.dart';
+import 'package:habit_task_tracker/frequency.dart';
+import 'package:habit_task_tracker/uuid.dart';
 
 class Log {
-  final String _habitId;
+  final Uuid _habitId;
   List<DateTime> timeStamps = [];
   String? notes;
 
-  Log({required String habitId, List<DateTime>? timeStamps, this.notes})
+  Log({required Uuid habitId, List<DateTime>? timeStamps, this.notes})
     : _habitId = habitId,
       timeStamps = timeStamps ?? [];
 
-  String get gId => _habitId;
+  Uuid get gId => _habitId;
 
   List<DateTime> get gTimeStamps => timeStamps;
 
@@ -19,7 +20,7 @@ class Log {
 
   Map<String, dynamic> toJson() {
     return {
-      'habitId': _habitId,
+      'habitId': _habitId.toString(),
       'timestamps': timeStamps.map((dt) => dt.toIso8601String()).toList(),
       'notes': notes,
     };
@@ -27,7 +28,7 @@ class Log {
 
   factory Log.fromJson(Map<String, dynamic> json) {
     return Log(
-      habitId: json['habitId'],
+      habitId: Uuid.fromString(json['habitId'] as String),
       timeStamps: (json['timestamps'] as List<dynamic>)
           .map((e) => DateTime.parse(e as String))
           .toList(),
@@ -77,11 +78,11 @@ class Log {
 }
 
 Future<void> saveLog(Log log) async {
-  await saveData('Logs', log.gId, log.toJson());
+  await saveData('Logs', log.gId.toString(), log.toJson());
 }
 
-Future<Log> loadLog(String id) async {
-  var data = await loadData('Logs', id);
+Future<Log> loadLog(Uuid id) async {
+  var data = await loadData('Logs', id.toString());
   if (data == null) {
     throw Exception('Log with id $id not found');
   }

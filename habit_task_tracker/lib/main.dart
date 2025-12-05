@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:habit_task_tracker/notifier.dart' as notifier;
+import 'package:habit_task_tracker/recurrence.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'habit.dart';
 import 'main_helpers.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'calendar.dart';
 import 'timer.dart';
+import 'uuid.dart';
 
 // I got some help from GitHub CoPilot with this code. I also got some ideas from
 // this youtube video: https://www.youtube.com/watch?v=K4P5DZ9TRns
@@ -107,6 +109,20 @@ class _MyHomePageState extends State<MyHomePage> {
 
   // Format DateTime to Date string
   String _format(DateTime d) => d.toIso8601String().split('T').first;
+
+  // Format recurrence details to string
+  String _recurrenceText(List<Recurrence> recurrences) {
+    if (recurrences.isEmpty) {
+      return 'No';
+    }
+    // Get frequency strings
+    return recurrences
+        .map((f) => frequencyToString(f.freq))
+        // Unique frequencies only
+        .toSet()
+        .toList()
+        .join(', ');
+  }
 
   // Main body build method
   @override
@@ -268,7 +284,7 @@ class _MyHomePageState extends State<MyHomePage> {
                                     context,
                                   );
                                   final ok = await setCompletion(
-                                    habit.gId,
+                                    Uuid.fromString(habit.gId),
                                     newVal,
                                     habit.description,
                                   );
@@ -362,7 +378,7 @@ class _MyHomePageState extends State<MyHomePage> {
                                         const SizedBox(width: 6),
                                         Flexible(
                                           child: Text(
-                                            'Recurring: ${_habits[index].gIsRecurring ? frequencyToString(_habits[index].gFrequency) : "No"}',
+                                            'Recurring: ${_habits[index].gIsRecurring ? _recurrenceText(_habits[index].gRecurrences) : "No"}',
                                           ),
                                         ),
                                       ],
