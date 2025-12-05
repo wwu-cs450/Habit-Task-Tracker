@@ -1,15 +1,11 @@
 import 'package:habit_task_tracker/habit.dart';
 import 'package:localstore/localstore.dart';
-import 'dart:io';
 import 'package:fuzzywuzzy/fuzzywuzzy.dart';
 
 final db = Localstore.instance;
 final fuzzyVal = 70; // threshold for fuzzy search
 
-// check if //data/habits exists
-final filePath = Directory('data/Habits');
-bool exists = filePath.existsSync();
-final collectionHabits = exists ? db.collection('data/Habits') : null;
+final collectionHabits = db.collection('data/Habits');
 final collectionTestHabits = db.collection('data/Habits_test');
 
 Future<List<Habit>> searchHabits({
@@ -20,9 +16,6 @@ Future<List<Habit>> searchHabits({
   bool test = false,
 }) {
   Future<List<Habit>> results = Future.value([]);
-  if (!exists) {
-    return results;
-  }
   if (date1 != null && date2 != null) {
     return searchHabitsBetweenDates(date1, date2, test: test);
   } else if (name != null) {
