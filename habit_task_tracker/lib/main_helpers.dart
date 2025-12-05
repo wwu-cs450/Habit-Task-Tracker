@@ -134,7 +134,7 @@ Future<Habit> createAndPersistHabit(
       startDate: s,
       endDate: e,
       recurrences: [Recurrence(freq: effectiveFrequency)],
-    ).addRecurrence(effectiveFrequency).withNotification();
+    ).withNotification();
   } else {
     habit = Habit.oneTime(
       name: title,
@@ -142,10 +142,6 @@ Future<Habit> createAndPersistHabit(
       startDate: s,
       endDate: e,
     ).withNotification();
-  }
-
-  if (isRecurring) {
-    habit.addRecurrence(effectiveFrequency);
   }
 
   if (isRecurring) {
