@@ -7,17 +7,9 @@ import 'package:duration/duration.dart';
 import 'package:logger/logger.dart';
 import 'package:table_calendar/table_calendar.dart';
 import 'package:habit_task_tracker/recurrence.dart';
+import 'package:habit_task_tracker/frequency.dart';
 import 'package:jiffy/jiffy.dart';
 
-enum Frequency { daily, weekly, monthly, yearly, none }
-
-Map<String, Frequency> frequencyMap = {
-  'Frequency.daily': Frequency.daily,
-  'Frequency.weekly': Frequency.weekly,
-  'Frequency.monthly': Frequency.monthly,
-  'Frequency.yearly': Frequency.yearly,
-  'Frequency.none': Frequency.none,
-};
 Log createLog(Uuid id, String? description) {
   return Log(habitId: id, notes: description);
 }

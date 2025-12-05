@@ -1,5 +1,6 @@
 import 'package:habit_task_tracker/search.dart';
 import 'package:habit_task_tracker/habit.dart';
+import 'package:habit_task_tracker/frequency.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:habit_task_tracker/uuid.dart';
 import '_setup_mocks.dart';

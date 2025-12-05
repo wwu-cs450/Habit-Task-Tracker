@@ -1,4 +1,4 @@
-import 'package:habit_task_tracker/habit.dart';
+import 'package:habit_task_tracker/frequency.dart';
 
 class Recurrence {
   Frequency freq;

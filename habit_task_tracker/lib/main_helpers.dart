@@ -1,10 +1,10 @@
 import 'package:habit_task_tracker/backend.dart';
 import 'package:habit_task_tracker/habit.dart';
+import 'package:habit_task_tracker/frequency.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:habit_task_tracker/log.dart';
 import 'package:habit_task_tracker/notifier.dart' as notifier;
-import 'package:habit_task_tracker/recurrence.dart';
 import 'package:habit_task_tracker/uuid.dart';
 
 // I got help from Copilot to write the following functions.
