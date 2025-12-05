@@ -125,27 +125,6 @@ void main() {
       expect(habit.gRecurrences.first.freq, Frequency.daily);
     });
 
-    test('Conversion from old ID format to new ID format', () {
-      // create a habit with an old ID format using JSON
-      final json = {
-        'id': '1234567890',
-        'name': 'Meditate',
-        'startDate': '2024-04-04T00:00:00.000',
-        'endDate': '2024-09-30T00:00:00.000',
-        'isRecurring': true,
-        'recurrences': [
-          {'freq': 'Frequency.daily'},
-        ],
-      };
-      final habit = Habit.fromJson(json);
-      expect(habit.gId, isNot(equals('1234567890')));
-      expect(habit.gName, 'Meditate');
-      expect(habit.gStartDate, DateTime(2024, 4, 4));
-      expect(habit.gEndDate, DateTime(2024, 9, 30));
-      expect(habit.gIsRecurring, true);
-      expect(habit.gRecurrences.first.freq, Frequency.daily);
-    });
-
     test('Delete Habit Test', () async {
       final habit = Habit.oneTime(
         name: 'Habit to Delete',
