@@ -5,7 +5,6 @@ import 'package:fuzzywuzzy/fuzzywuzzy.dart';
 final db = Localstore.instance;
 final fuzzyVal = 70; // threshold for fuzzy search
 
-// check if //data/habits exists
 final collectionHabits = db.collection('data/Habits');
 
 Future<List<Habit>> searchHabits({
