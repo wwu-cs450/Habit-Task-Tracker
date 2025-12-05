@@ -133,7 +133,9 @@ void main() {
         'startDate': '2024-04-04T00:00:00.000',
         'endDate': '2024-09-30T00:00:00.000',
         'isRecurring': true,
-        'frequency': 'Frequency.daily',
+        'recurrences': [
+          {'freq': 'Frequency.daily'},
+        ],
       };
       final habit = Habit.fromJson(json);
       expect(habit.gId, isNot(equals('1234567890')));
