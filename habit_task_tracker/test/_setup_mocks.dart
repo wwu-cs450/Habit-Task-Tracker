@@ -18,7 +18,7 @@ void setupMocks() {
   FlutterLocalNotificationsPlatform.instance = mock;
 }
 
-void clearTestHabitsFolder() async {
+Future<void> clearTestHabitsFolder() async {
   final path = Directory('data/Habits_test');
   if (await path.exists()) {
     final files = path.listSync();
