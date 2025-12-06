@@ -372,5 +372,36 @@ void main() {
         ]),
       );
     });
+
+    test("Get todays Habits", () async {
+      final today = DateTime.now();
+      final habit1 = Habit.oneTime(
+        name: 'Today Habit 1',
+        startDate: today,
+        endDate: today,
+      );
+      final habit2 = Habit.recurring(
+        name: 'Today Habit 2',
+        startDate: today.subtract(Duration(days: 5)),
+        endDate: today.add(Duration(days: 5)),
+      ).addRecurrence(Frequency.daily);
+      final habit3 = Habit.oneTime(
+        name: 'Not Today Habit',
+        startDate: today.add(Duration(days: 1)),
+        endDate: today.add(Duration(days: 2)),
+      );
+
+      await saveTestHabit(habit1);
+      await saveTestHabit(habit2);
+      await saveTestHabit(habit3);
+
+      final todaysHabits = await getTodaysHabits(test: true);
+
+      expect(todaysHabits.length, 2);
+      expect(
+        todaysHabits.map((e) => e.gName).toList(),
+        containsAll(['Today Habit 1', 'Today Habit 2']),
+      );
+    });
   });
 }

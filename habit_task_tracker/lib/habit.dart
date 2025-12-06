@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:habit_task_tracker/backend.dart';
 import 'package:habit_task_tracker/log.dart';
 import 'package:habit_task_tracker/notifier.dart' as notifier;
+import 'package:habit_task_tracker/search.dart';
 import 'package:habit_task_tracker/uuid.dart';
 import 'package:duration/duration.dart';
 import 'package:logger/logger.dart';
@@ -240,6 +241,9 @@ Future<void> saveTestHabit(Habit habit) async {
 
 Future<Habit> loadHabit(String id) async {
   final data = await loadData('Habits', id);
+  if (data == null) {
+    throw Exception('Habit with id $id not found');
+  }
   return Habit.fromJson(Map<String, dynamic>.from(data));
 }
 
@@ -263,6 +267,7 @@ Future<void> changeHabit(
   DateTime? startDate,
   DateTime? endDate,
   bool? isRecurring,
+  List<Recurrence>? recurrences,
   bool test = false,
 }) async {
   Habit habit = (test ? await loadTestHabit(id) : await loadHabit(id));
@@ -280,6 +285,9 @@ Future<void> changeHabit(
   }
   if (isRecurring != null) {
     habit.isRecurring = isRecurring;
+  }
+  if (recurrences != null) {
+    habit.recurrences = recurrences;
   }
   test ? await saveTestHabit(habit) : await saveHabit(habit);
 }
@@ -392,4 +400,20 @@ Future<List<DateTime>> getHabitDates(
     }
   }
   return dates;
+}
+
+Future<List<Habit>> getTodaysHabits({DateTime? date, bool test = false}) async {
+  final today = date ?? DateTime.now();
+  List<Habit> todaysHabits = [];
+  final allHabits = await searchAllHabits(test: test);
+  for (Habit habit in allHabits) {
+    final habitDates = await getHabitDates(habit.gId, today, test: test);
+    for (DateTime date in habitDates) {
+      if (isSameDay(date, today)) {
+        todaysHabits.add(habit);
+        break;
+      }
+    }
+  }
+  return todaysHabits;
 }
