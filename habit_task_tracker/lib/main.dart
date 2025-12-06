@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:habit_task_tracker/notifier.dart' as notifier;
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:habit_task_tracker/timer.dart';
 import 'habit.dart';
 import 'main_helpers.dart';
 import 'calendar.dart';
@@ -166,6 +167,21 @@ class _MyHomePageState extends State<MyHomePage> {
                     context,
                     MaterialPageRoute(
                       builder: (_) => CalendarPage(habits: _habits),
+                    ),
+                  );
+                },
+              ),
+
+              ListTile(
+                leading: const Icon(Icons.timer),
+                title: const Text('Timer'),
+                onTap: () {
+                  debugPrint('Timer tapped');
+                  Navigator.pop(context);
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => TimerPage(habits: _habits),
                     ),
                   );
                 },
