@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'dart:async';
 import 'package:habit_task_tracker/notifier.dart' as notifier;
 import 'package:habit_task_tracker/recurrence.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
@@ -61,6 +62,10 @@ class MyHomePage extends StatefulWidget {
 class _MyHomePageState extends State<MyHomePage> {
   // Create list to store habits
   List<Habit> _habits = <Habit>[];
+  // Cached copy of all habits loaded from the DB to avoid reloading every keystroke
+  List<Habit> _allHabits = <Habit>[];
+  // Debounce timer for search input
+  Timer? _searchDebounce;
   // Track which habit IDs have a log timestamp for today.
   final Set<String> _completedToday = <String>{};
   // Track which habit cards are expanded in the UI
@@ -82,6 +87,7 @@ class _MyHomePageState extends State<MyHomePage> {
               .cast<String>();
           setState(() {
             _habits = habits;
+            _allHabits = List<Habit>.from(habits);
             _completedToday.clear();
             _completedToday.addAll(completed);
             _expanded.clear();
@@ -103,21 +109,32 @@ class _MyHomePageState extends State<MyHomePage> {
 
     if (trimmedValue.isEmpty) {
       try {
-        final result = await loadHabitsFromDb();
-        if (!mounted) return;
-        final List<Habit> habits = (result['habits'] as List<dynamic>)
-            .cast<Habit>();
-        final Set<String> completed = (result['completedIds'] as Set<dynamic>)
-            .cast<String>();
-        setState(() {
-          _habits = habits;
-          _completedToday
-            ..clear()
-            ..addAll(completed);
-          _expanded
-            ..clear()
-            ..addAll(List<bool>.filled(_habits.length, false));
-        });
+        if (_allHabits.isEmpty) {
+          final result = await loadHabitsFromDb();
+          if (!mounted) return;
+          final List<Habit> habits = (result['habits'] as List<dynamic>)
+              .cast<Habit>();
+          final Set<String> completed = (result['completedIds'] as Set<dynamic>)
+              .cast<String>();
+          _allHabits = List<Habit>.from(habits);
+          setState(() {
+            _habits = habits;
+            _completedToday
+              ..clear()
+              ..addAll(completed);
+            _expanded
+              ..clear()
+              ..addAll(List<bool>.filled(_habits.length, false));
+          });
+        } else {
+          if (!mounted) return;
+          setState(() {
+            _habits = List<Habit>.from(_allHabits);
+            _expanded
+              ..clear()
+              ..addAll(List<bool>.filled(_habits.length, false));
+          });
+        }
       } catch (e) {
         debugPrint('Search reload failed: $e');
       }
@@ -126,9 +143,14 @@ class _MyHomePageState extends State<MyHomePage> {
 
     try {
       // Temporary in-memory search fallback while search.dart is being fixed
-      final all = await loadHabitsFromDb();
-      final List<Habit> allHabits = (all['habits'] as List<dynamic>)
-          .cast<Habit>();
+      List<Habit> allHabits;
+      if (_allHabits.isNotEmpty) {
+        allHabits = _allHabits;
+      } else {
+        final all = await loadHabitsFromDb();
+        allHabits = (all['habits'] as List<dynamic>).cast<Habit>();
+        _allHabits = List<Habit>.from(allHabits);
+      }
 
       // Date formatting
       final lower = trimmedValue.toLowerCase();
@@ -279,6 +301,20 @@ class _MyHomePageState extends State<MyHomePage> {
     });
   }
 
+  // Debounced onChanged handler to avoid calling the search on every keystroke
+  void _onSearchChanged(String value) {
+    _searchDebounce?.cancel();
+    _searchDebounce = Timer(const Duration(milliseconds: 300), () {
+      _localSearch(value);
+    });
+  }
+
+  @override
+  void dispose() {
+    _searchDebounce?.cancel();
+    super.dispose();
+  }
+
   // Format DateTime to Date string
   String _format(DateTime d) => d.toIso8601String().split('T').first;
 
@@ -351,7 +387,7 @@ class _MyHomePageState extends State<MyHomePage> {
                 title: const Text('Calendar'),
                 onTap: () {
                   Navigator.pop(context);
-                  Navigator.pushReplacement(
+                  Navigator.push(
                     context,
                     MaterialPageRoute(
                       builder: (context) => CalendarPage(habits: _habits),
@@ -395,8 +431,8 @@ class _MyHomePageState extends State<MyHomePage> {
                   ),
                 ),
                 // Handle searching
-                onChanged: (value) async {
-                  _localSearch(value);
+                onChanged: (value) {
+                  _onSearchChanged(value);
                 },
                 style: const TextStyle(fontSize: 14),
               ),
@@ -609,6 +645,9 @@ class _MyHomePageState extends State<MyHomePage> {
                                                     _habits.removeAt(idx);
                                                     _expanded.removeAt(idx);
                                                     _completedToday.remove(id);
+                                                    _allHabits.removeWhere(
+                                                      (h) => h.gId == id,
+                                                    );
                                                   }
                                                 });
                                                 _updateProgressBar(
@@ -646,6 +685,7 @@ class _MyHomePageState extends State<MyHomePage> {
               setState(() {
                 _habits.insert(0, habit);
                 _expanded.insert(0, false);
+                _allHabits.insert(0, habit);
               });
               _updateProgressBar(_habits.length, _completedToday.length);
             });
