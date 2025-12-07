@@ -219,20 +219,18 @@ class _MyHomePageState extends State<MyHomePage> {
         // exactly in the name/description. This
         // prevents fuzzy partial matches like "habit 1" matching
         // "habit 10".
-        final digitMatches = RegExp(
-          r'\b(\d+)\b',
-        ).allMatches(q).map((m) => m.group(1)!).toList();
+        final digitRegex = RegExp(r'\b(\d+)\b');
+        final digitMatches = digitRegex
+            .allMatches(q)
+            .map((m) => m.group(1)!)
+            .toList();
         if (digitMatches.isNotEmpty) {
           final candidateDigits = <String>[];
           candidateDigits.addAll(
-            RegExp(
-              r'\b(\d+)\b',
-            ).allMatches(name).map((m) => m.group(1)!).toList(),
+            digitRegex.allMatches(name).map((m) => m.group(1)!).toList(),
           );
           candidateDigits.addAll(
-            RegExp(
-              r'\b(\d+)\b',
-            ).allMatches(desc).map((m) => m.group(1)!).toList(),
+            digitRegex.allMatches(desc).map((m) => m.group(1)!).toList(),
           );
 
           bool allDigitsMatchAsPrefix = true;
