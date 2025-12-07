@@ -1,5 +1,6 @@
 import 'package:habit_task_tracker/backend.dart';
 import 'package:habit_task_tracker/habit.dart';
+import 'package:habit_task_tracker/frequency.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:habit_task_tracker/log.dart';
@@ -124,16 +125,30 @@ Future<Habit> createAndPersistHabit(
       ? (frequency ?? Frequency.daily)
       : (frequency ?? Frequency.none);
 
-  final habit = Habit(
-    name: title,
-    description: description,
-    startDate: s,
-    endDate: e,
-    isRecurring: isRecurring,
-    frequency: effectiveFrequency,
-  ).withNotification();
+  final Habit habit;
 
-  await saveHabit(habit);
+  if (isRecurring) {
+    habit = Habit.recurring(
+      name: title,
+      description: description,
+      startDate: s,
+      endDate: e,
+    ).withNotification();
+  } else {
+    habit = Habit.oneTime(
+      name: title,
+      description: description,
+      startDate: s,
+      endDate: e,
+    ).withNotification();
+  }
+
+  if (isRecurring) {
+    habit.addRecurrence(effectiveFrequency);
+  }
+
+  final Map<String, dynamic> m = habit.toJson();
+  await db.collection('data/Habits').doc(habit.gId).set(m);
   return habit;
 }
 

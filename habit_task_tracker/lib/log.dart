@@ -1,6 +1,6 @@
 import 'dart:math';
 import 'package:habit_task_tracker/backend.dart';
-import 'package:habit_task_tracker/habit.dart';
+import 'package:habit_task_tracker/frequency.dart';
 import 'package:habit_task_tracker/uuid.dart';
 
 class Log {
