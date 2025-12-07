@@ -14,7 +14,7 @@ import '_setup_mocks.dart';
 void main() {
   setUpAll(setupMocks);
 
-  testWidgets('Adding a habit with the FAB increases the card count', (
+  testWidgets('Adding a habit increases the card count', (
     WidgetTester tester,
   ) async {
     // Build our app and trigger a frame.
@@ -29,9 +29,15 @@ void main() {
     await tester.tap(find.byIcon(Icons.add));
     await tester.pumpAndSettle();
 
-    // Populate the fields in the dialog
-    await tester.enterText(find.byType(TextField).at(0), 'Test Habit');
-    await tester.enterText(find.byType(TextField).at(1), 'Test description');
+    // Populate the fields in the dialog. Find only TextFields inside the
+    // AlertDialog so we don't accidentally type into the global search field.
+    final dialogFields = find.descendant(
+      of: find.byType(AlertDialog),
+      matching: find.byType(TextField),
+    );
+
+    await tester.enterText(dialogFields.at(0), 'Test Habit');
+    await tester.enterText(dialogFields.at(1), 'Test description');
 
     // Save the habit
     await tester.tap(find.text('Save'));
