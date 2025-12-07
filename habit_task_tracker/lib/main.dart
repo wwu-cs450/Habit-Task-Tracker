@@ -8,8 +8,6 @@ import 'main_helpers.dart';
 import 'calendar.dart';
 import 'uuid.dart';
 import 'package:fuzzywuzzy/fuzzywuzzy.dart';
-import 'package:habit_task_tracker/notifier.dart' as notifier;
-import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
 // I got some help from GitHub CoPilot with this code. I also got some ideas from
 // this youtube video: https://www.youtube.com/watch?v=K4P5DZ9TRns
