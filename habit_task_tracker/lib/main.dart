@@ -202,18 +202,14 @@ class _MyHomePageState extends State<MyHomePage> {
         }
 
         // Exact match or whole-word matching
-        final normalizedName = name;
-        final normalizedDesc = desc;
         final pattern = RegExp(r'\b' + RegExp.escape(q) + r'\b');
-        if (normalizedName == q ||
-            pattern.hasMatch(normalizedName) ||
-            pattern.hasMatch(normalizedDesc)) {
+        if (name == q || pattern.hasMatch(name) || pattern.hasMatch(desc)) {
           results.add(h);
           continue;
         }
 
         // Simple description checking
-        if (normalizedDesc.contains(q)) {
+        if (desc.contains(q)) {
           results.add(h);
           continue;
         }
@@ -231,12 +227,12 @@ class _MyHomePageState extends State<MyHomePage> {
           candidateDigits.addAll(
             RegExp(
               r'\b(\d+)\b',
-            ).allMatches(normalizedName).map((m) => m.group(1)!).toList(),
+            ).allMatches(name).map((m) => m.group(1)!).toList(),
           );
           candidateDigits.addAll(
             RegExp(
               r'\b(\d+)\b',
-            ).allMatches(normalizedDesc).map((m) => m.group(1)!).toList(),
+            ).allMatches(desc).map((m) => m.group(1)!).toList(),
           );
 
           bool allDigitsMatchAsPrefix = true;
