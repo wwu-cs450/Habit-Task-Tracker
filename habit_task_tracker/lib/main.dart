@@ -1,5 +1,5 @@
-import 'package:flutter/material.dart';
 import 'dart:async';
+import 'package:flutter/material.dart';
 import 'package:habit_task_tracker/notifier.dart' as notifier;
 import 'package:habit_task_tracker/recurrence.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
@@ -68,6 +68,8 @@ class _MyHomePageState extends State<MyHomePage> {
   Timer? _searchDebounce;
   // Track which habit IDs have a log timestamp for today.
   final Set<String> _completedToday = <String>{};
+  // Cached set of completed IDs for the full habit list (used when searching)
+  final Set<String> _allCompletedToday = <String>{};
   // Track which habit cards are expanded in the UI
   final List<bool> _expanded = <bool>[];
 
@@ -90,6 +92,9 @@ class _MyHomePageState extends State<MyHomePage> {
             _allHabits = List<Habit>.from(habits);
             _completedToday.clear();
             _completedToday.addAll(completed);
+            _allCompletedToday
+              ..clear()
+              ..addAll(completed);
             _expanded.clear();
             for (var _ in _habits) {
               _expanded.add(false);
@@ -122,6 +127,9 @@ class _MyHomePageState extends State<MyHomePage> {
             _completedToday
               ..clear()
               ..addAll(completed);
+            _allCompletedToday
+              ..clear()
+              ..addAll(completed);
             _expanded
               ..clear()
               ..addAll(List<bool>.filled(_habits.length, false));
@@ -133,6 +141,10 @@ class _MyHomePageState extends State<MyHomePage> {
             _expanded
               ..clear()
               ..addAll(List<bool>.filled(_habits.length, false));
+            // Restore the completed set from the cached full-set
+            _completedToday
+              ..clear()
+              ..addAll(_allCompletedToday);
           });
         }
       } catch (e) {
@@ -268,7 +280,7 @@ class _MyHomePageState extends State<MyHomePage> {
       if (!mounted) return;
 
       final Set<String> completedMatches = results
-          .where((h) => _completedToday.contains(h.gId))
+          .where((h) => _allCompletedToday.contains(h.gId))
           .map((h) => h.gId)
           .toSet();
 
@@ -498,8 +510,10 @@ class _MyHomePageState extends State<MyHomePage> {
                                   setState(() {
                                     if (newVal) {
                                       _completedToday.add(habit.gId);
+                                      _allCompletedToday.add(habit.gId);
                                     } else {
                                       _completedToday.remove(habit.gId);
+                                      _allCompletedToday.remove(habit.gId);
                                     }
                                   });
                                   _updateProgressBar(
@@ -523,8 +537,10 @@ class _MyHomePageState extends State<MyHomePage> {
                                     setState(() {
                                       if (newVal) {
                                         _completedToday.remove(habit.gId);
+                                        _allCompletedToday.remove(habit.gId);
                                       } else {
                                         _completedToday.add(habit.gId);
+                                        _allCompletedToday.add(habit.gId);
                                       }
                                     });
                                     _updateProgressBar(
