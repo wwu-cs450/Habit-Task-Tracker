@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:habit_task_tracker/habit.dart';
 import 'package:habit_task_tracker/frequency.dart';
+import 'package:habit_task_tracker/recurrence.dart';
 import 'package:habit_task_tracker/uuid.dart';
 import '_setup_mocks.dart';
 
@@ -373,7 +374,7 @@ void main() {
       );
     });
 
-    test("Get todays Habits", () async {
+    test("Get today's habits", () async {
       final today = DateTime.now();
       final habit1 = Habit.oneTime(
         name: 'Today Habit 1',
@@ -391,6 +392,8 @@ void main() {
         endDate: today.add(Duration(days: 2)),
       );
 
+      final todaysHabitIds = [habit1.gId, habit2.gId];
+
       await saveTestHabit(habit1);
       await saveTestHabit(habit2);
       await saveTestHabit(habit3);
@@ -399,9 +402,30 @@ void main() {
 
       expect(todaysHabits.length, 2);
       expect(
-        todaysHabits.map((e) => e.gName).toList(),
-        containsAll(['Today Habit 1', 'Today Habit 2']),
+        todaysHabits.map((e) => e.gId).toList(),
+        containsAll(todaysHabitIds),
       );
+    });
+
+    test('Change Habit recurrences', () async {
+      final habit = Habit.recurring(
+        name: 'Test Habit',
+        startDate: DateTime(2024, 1, 1),
+        endDate: DateTime(2024, 12, 31),
+      ).addRecurrence(Frequency.daily);
+
+      final habitId = habit.gId;
+      await saveTestHabit(habit);
+
+      // Update recurrences
+      final newRecurrences = [
+        Recurrence(freq: Frequency.weekly, startDate: DateTime(2024, 1, 1)),
+      ];
+      await changeHabit(habitId, recurrences: newRecurrences, test: true);
+
+      final loadedHabit = await loadTestHabit(habitId);
+      expect(loadedHabit.gRecurrences.length, 1);
+      expect(loadedHabit.gRecurrences.first.freq, Frequency.weekly);
     });
   });
 }
