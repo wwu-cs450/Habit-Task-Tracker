@@ -398,11 +398,11 @@ void main() {
       await saveTestHabit(habit2);
       await saveTestHabit(habit3);
 
-      final todaysHabits = await getHabitsForToday(test: true);
+      final habitsForToday = await getHabitsForToday(date: today, test: true);
 
-      expect(todaysHabits.length, 2);
+      expect(habitsForToday.length, 2);
       expect(
-        todaysHabits.map((e) => e.gId).toList(),
+        habitsForToday.map((e) => e.gId).toList(),
         containsAll(todaysHabitIds),
       );
     });
