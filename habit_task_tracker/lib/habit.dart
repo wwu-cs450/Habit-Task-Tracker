@@ -405,14 +405,17 @@ Future<List<DateTime>> getHabitDates(
   return dates;
 }
 
-Future<List<Habit>> getTodaysHabits({DateTime? date, bool test = false}) async {
+Future<List<Habit>> getHabitsForToday({
+  DateTime? date,
+  bool test = false,
+}) async {
   final today = date ?? DateTime.now();
   List<Habit> todaysHabits = [];
   final allHabits = await searchAllHabits(test: test);
   for (Habit habit in allHabits) {
     final habitDates = await getHabitDates(habit.gId, today, test: test);
-    for (DateTime date in habitDates) {
-      if (isSameDay(date, today)) {
+    for (DateTime habitDate in habitDates) {
+      if (isSameDay(habitDate, today)) {
         todaysHabits.add(habit);
         break;
       }

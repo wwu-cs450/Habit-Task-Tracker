@@ -398,7 +398,7 @@ void main() {
       await saveTestHabit(habit2);
       await saveTestHabit(habit3);
 
-      final todaysHabits = await getTodaysHabits(test: true);
+      final todaysHabits = await getHabitsForToday(test: true);
 
       expect(todaysHabits.length, 2);
       expect(
