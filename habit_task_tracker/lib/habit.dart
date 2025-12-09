@@ -249,6 +249,9 @@ Future<Habit> loadHabit(String id) async {
 
 Future<Habit> loadTestHabit(String id) async {
   final data = await loadData('Habits_test', id);
+  if (data == null) {
+    throw Exception('Habit with id $id not found');
+  }
   return Habit.fromJson(Map<String, dynamic>.from(data));
 }
 
