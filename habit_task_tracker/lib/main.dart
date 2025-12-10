@@ -114,7 +114,6 @@ class _MyHomePageState extends State<MyHomePage> {
       List<Habit> results = [];
 
       if (trimmedValue.isEmpty) {
-        // If empty, load today's habits
         final result = await loadHabitsFromDb();
         results = (result['habits'] as List<dynamic>).cast<Habit>();
 
@@ -146,7 +145,7 @@ class _MyHomePageState extends State<MyHomePage> {
       // Sort results by startDate (newest first) to match the original order
       results.sort((a, b) => b.startDate.compareTo(a.startDate));
 
-      // Final deduplication check before displaying
+      // Check to remove any duplicates
       final finalResults = <Habit>[];
       final seenIds = <String>{};
       for (final habit in results) {
@@ -173,7 +172,7 @@ class _MyHomePageState extends State<MyHomePage> {
           ..addAll(completedMatches);
       });
 
-      // Update progress bar to reflect search results
+      // Update progress based on how many of the results are checked
       _updateProgressBar(finalResults.length, completedMatches.length);
     } catch (e) {
       debugPrint('searchHabits failed: $e');
@@ -218,7 +217,7 @@ class _MyHomePageState extends State<MyHomePage> {
     });
   }
 
-  // Debounced onChanged handler to avoid calling the search on every keystroke
+  // Debounced onChanged handler to avoid calling the search every time a key is pressed
   void _onSearchChanged(String value) {
     _searchDebounce?.cancel();
     _searchDebounce = Timer(const Duration(milliseconds: 300), () {
@@ -243,7 +242,6 @@ class _MyHomePageState extends State<MyHomePage> {
     // Get frequency strings
     return recurrences
         .map((f) => frequencyToString(f.freq))
-        // Unique frequencies only
         .toSet()
         .toList()
         .join(', ');
@@ -263,7 +261,6 @@ class _MyHomePageState extends State<MyHomePage> {
           onPressed: () => _scaffoldKey.currentState?.openDrawer(),
         ),
         backgroundColor: const Color.fromARGB(255, 221, 146, 181),
-        // backgroundColor: Theme.of(context).colorScheme.inversePrimary,
         title: Text(widget.title),
       ),
 
@@ -390,7 +387,6 @@ class _MyHomePageState extends State<MyHomePage> {
                     child: LinearProgressIndicator(
                       value: progress,
                       minHeight: 10,
-                      // NEED TO DECIDE WHAT COLORS TO USE HERE
                       backgroundColor: Colors.grey.shade300,
                       color: const Color.fromARGB(255, 28, 164, 255),
                     ),

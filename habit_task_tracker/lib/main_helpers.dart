@@ -51,7 +51,6 @@ Future<void> deleteHabitWithConfirmation(
     builder: (context) => AlertDialog(
       title: const Text('Delete item?'),
       content: const Text('Are you sure you want to delete this item?'),
-      // Remove dialog from the display with a boolean result
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context, false),
@@ -87,7 +86,6 @@ Future<void> deleteHabitWithConfirmation(
   }
 }
 
-// THIS COULD LIKELY BE MOVED TO HABIT.DART
 /// Create a Habit and save it
 Future<Habit> createAndPersistHabit(
   String title,
@@ -153,7 +151,6 @@ Future<void> showCreateHabitDialog(
     return '$y-$m-$day';
   }
 
-  // initialize with start date today and end date tomorrow
   selectedStartDate = DateTime.now();
   selectedEndDate = selectedStartDate.add(const Duration(days: 1));
   dateController.text = formatDate(selectedStartDate);
@@ -219,8 +216,6 @@ Future<void> showCreateHabitDialog(
                     Row(
                       children: [
                         const Text('Frequency'),
-
-                        // NEED TO CREATE A TIME FIELD
                         const SizedBox(width: 12),
                         DropdownButton<Frequency>(
                           value: selectedFrequency,
@@ -343,7 +338,6 @@ Future<void> showCreateHabitDialog(
     try {
       // Ensure that end date is on or after start date
       if (selectedStartDate != null && selectedEndDate != null) {
-        // Normalize dates to remove time components
         final startDateOnly = DateTime(
           selectedStartDate!.year,
           selectedStartDate!.month,
@@ -432,7 +426,6 @@ Future<bool> setCompletion(
           await saveLog(existingLog);
         }
       } catch (_) {
-        // No existing log so create one and add timestamp
         final l = createLog(habitId, description);
         await l.updateTimeStamps(now);
       }

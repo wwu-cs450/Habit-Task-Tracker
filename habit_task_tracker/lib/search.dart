@@ -9,31 +9,6 @@ final digitRegex = RegExp(r'\b(\d+)\b');
 final collectionHabits = db.collection('data/Habits');
 final collectionTestHabits = db.collection('data/Habits_test');
 
-/// Helper function to check if all digits in the query match the candidate text
-bool _checkDigitMatch(String query, String candidate) {
-  final digitMatches = digitRegex
-      .allMatches(query)
-      .map((m) => m.group(1)!)
-      .toList();
-
-  if (digitMatches.isEmpty) {
-    return true;
-  }
-
-  final candidateDigits = digitRegex
-      .allMatches(candidate)
-      .map((m) => m.group(1)!)
-      .toList();
-
-  for (final digit in digitMatches) {
-    if (!candidateDigits.contains(digit)) {
-      return false;
-    }
-  }
-
-  return true;
-}
-
 Future<List<Habit>> searchHabits({
   DateTime? date1,
   DateTime? date2,
@@ -96,18 +71,18 @@ Future<List<Habit>> searchHabitsByName(String name, {bool test = false}) async {
     Habit habit = Habit.fromJson(data);
     final habitName = habit.name.toLowerCase();
 
-    // Check if digits in query match the habit name
+    // Exact digit match
     if (!_checkDigitMatch(q, habitName)) {
       return;
     }
 
-    // Check if query is contained in the name
+    // Exact contains match
     if (habitName.contains(q)) {
       results.add(habit);
       return;
     }
 
-    // Then apply the fuzzy matching logic
+    // Fuzzy match
     int ratioName = ratio(habitName, q);
     if (ratioName > fuzzyVal) {
       results.add(habit);
@@ -135,18 +110,18 @@ Future<List<Habit>> searchHabitsByDescription(
     if (habit.description != null) {
       final habitDesc = habit.description!.toLowerCase();
 
-      // Check if digits in query match the habit description
+      // Exact digit match
       if (!_checkDigitMatch(q, habitDesc)) {
         return;
       }
 
-      // Check if query is contained in the description
+      // exact contains match
       if (habitDesc.contains(q)) {
         results.add(habit);
         return;
       }
 
-      // Then apply the fuzzy matching logic
+      // Fuzzy match
       int ratioDesc = partialRatio(habitDesc, q);
       if (ratioDesc > fuzzyVal) {
         results.add(habit);
@@ -170,4 +145,29 @@ Future<List<Habit>> searchAllHabits({bool test = false}) async {
     results.add(habit);
   });
   return results;
+}
+
+// Helper function to check for exact digit matches
+bool _checkDigitMatch(String query, String candidate) {
+  final digitMatches = digitRegex
+      .allMatches(query)
+      .map((m) => m.group(1)!)
+      .toList();
+
+  if (digitMatches.isEmpty) {
+    return true;
+  }
+
+  final candidateDigits = digitRegex
+      .allMatches(candidate)
+      .map((m) => m.group(1)!)
+      .toList();
+
+  for (final digit in digitMatches) {
+    if (!candidateDigits.contains(digit)) {
+      return false;
+    }
+  }
+
+  return true;
 }
