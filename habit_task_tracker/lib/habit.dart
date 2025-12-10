@@ -244,6 +244,9 @@ Future<Habit> loadHabit(String id) async {
   if (data == null) {
     throw Exception('Habit with id $id not found');
   }
+  if (data == null) {
+    throw Exception('Habit with id $id not found');
+  }
   return Habit.fromJson(Map<String, dynamic>.from(data));
 }
 
