@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:habit_task_tracker/backend.dart';
 import 'package:habit_task_tracker/log.dart';
 import 'package:habit_task_tracker/notifier.dart' as notifier;
+import 'package:habit_task_tracker/search.dart';
 import 'package:habit_task_tracker/uuid.dart';
 import 'package:duration/duration.dart';
 import 'package:logger/logger.dart';
@@ -240,11 +241,17 @@ Future<void> saveTestHabit(Habit habit) async {
 
 Future<Habit> loadHabit(String id) async {
   final data = await loadData('Habits', id);
+  if (data == null) {
+    throw Exception('Habit with id $id not found');
+  }
   return Habit.fromJson(Map<String, dynamic>.from(data));
 }
 
 Future<Habit> loadTestHabit(String id) async {
   final data = await loadData('Habits_test', id);
+  if (data == null) {
+    throw Exception('Habit with id $id not found');
+  }
   return Habit.fromJson(Map<String, dynamic>.from(data));
 }
 
@@ -263,6 +270,7 @@ Future<void> changeHabit(
   DateTime? startDate,
   DateTime? endDate,
   bool? isRecurring,
+  List<Recurrence>? recurrences,
   bool test = false,
 }) async {
   Habit habit = (test ? await loadTestHabit(id) : await loadHabit(id));
@@ -280,6 +288,9 @@ Future<void> changeHabit(
   }
   if (isRecurring != null) {
     habit.isRecurring = isRecurring;
+  }
+  if (recurrences != null) {
+    habit.recurrences = recurrences;
   }
   test ? await saveTestHabit(habit) : await saveHabit(habit);
 }
@@ -392,4 +403,29 @@ Future<List<DateTime>> getHabitDates(
     }
   }
   return dates;
+}
+
+Future<List<Habit>> getHabitsForToday({
+  DateTime? date,
+  bool test = false,
+}) async {
+  final today = date ?? DateTime.now();
+  List<Habit> habitsForToday = [];
+  // Filter habits that are active today
+  final habits = (await searchAllHabits(test: test)).where((habit) {
+    return (habit.startDate.isBefore(today) ||
+            habit.startDate.isAtSameMomentAs(today)) &&
+        (habit.endDate.isAfter(today) || habit.endDate.isAtSameMomentAs(today));
+  }).toList();
+
+  for (Habit habit in habits) {
+    final habitDates = await getHabitDates(habit.gId, today, test: test);
+    for (DateTime habitDate in habitDates) {
+      if (isSameDay(habitDate, today)) {
+        habitsForToday.add(habit);
+        break;
+      }
+    }
+  }
+  return habitsForToday;
 }
