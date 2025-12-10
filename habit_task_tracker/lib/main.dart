@@ -12,7 +12,7 @@ import 'calendar.dart';
 import 'uuid.dart';
 import 'package:fuzzywuzzy/fuzzywuzzy.dart';
 
-// I got some help from GitHub CoPilot with this code. I also got some ideas from
+// I got help from GitHub CoPilot with this code. I also got some ideas from
 // this youtube video: https://www.youtube.com/watch?v=K4P5DZ9TRns
 
 Future<void> main() async {
@@ -33,7 +33,6 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'Habit Task Tracker',
       theme: ThemeData(
-        // Need to decide what color scheme to use
         colorScheme: ColorScheme.fromSeed(
           seedColor: const Color.fromARGB(255, 0, 0, 0),
         ),
@@ -65,15 +64,15 @@ class MyHomePage extends StatefulWidget {
 class _MyHomePageState extends State<MyHomePage> {
   // Create list to store habits
   List<Habit> _habits = <Habit>[];
-  // Cached copy of all habits loaded from the DB to avoid reloading every keystroke
+  // Cached copy of all habits loaded from the DB (used with searching to restore)
   List<Habit> _allHabits = <Habit>[];
   // Debounce timer for search input
   Timer? _searchDebounce;
   // Track which habit IDs have a log timestamp for today.
   final Set<String> _completedToday = <String>{};
-  // Cached set of completed IDs for the full habit list (used when searching)
+  // Cached set of completed IDs for the full habit list (used with searching to restore)
   final Set<String> _allCompletedToday = <String>{};
-  // Track which habit cards are expanded in the UI
+  // Track which habit cards are expanded
   final List<bool> _expanded = <bool>[];
 
   double progress = 0.0;
