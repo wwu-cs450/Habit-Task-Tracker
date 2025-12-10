@@ -417,10 +417,12 @@ Future<List<Habit>> getHabitsForToday({
 }) async {
   final today = date ?? DateTime.now();
   final habits = await searchAllHabits(test: test);
-  
+
   return habits.where((habit) {
-    final isStarted = habit.startDate.isBefore(today) || _isSameDay(habit.startDate, today);
-    final notEnded = habit.endDate.isAfter(today) || _isSameDay(habit.endDate, today);
+    final isStarted =
+        habit.startDate.isBefore(today) || _isSameDay(habit.startDate, today);
+    final notEnded =
+        habit.endDate.isAfter(today) || _isSameDay(habit.endDate, today);
     return isStarted && notEnded;
   }).toList();
 }

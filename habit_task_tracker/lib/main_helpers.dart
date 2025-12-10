@@ -13,7 +13,7 @@ import 'package:habit_task_tracker/notifier.dart' as notifier;
 Future<Map<String, dynamic>> loadHabitsFromDb() async {
   final List<Habit> list = await getHabitsForToday();
   final List<bool> loadedCompleted = <bool>[];
-  
+
   for (final Habit habit in list) {
     final bool completedToday = await _isCompletedToday(habit);
     loadedCompleted.add(completedToday);

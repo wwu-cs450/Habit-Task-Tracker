@@ -63,23 +63,25 @@ Future<List<Habit>> searchHabitsByName(String name, {bool test = false}) async {
   if (habitsData == null) {
     return results;
   }
-  
+
   final q = name.toLowerCase();
   final digitRegex = RegExp(r'\b(\d+)\b');
-  final digitMatches =
-      digitRegex.allMatches(q).map((m) => m.group(1)!).toList();
-  
+  final digitMatches = digitRegex
+      .allMatches(q)
+      .map((m) => m.group(1)!)
+      .toList();
+
   habitsData.forEach((id, data) {
     Habit habit = Habit.fromJson(data);
     final habitName = habit.name.toLowerCase();
-    
+
     // If query contains digits, require exact digit matching first
     if (digitMatches.isNotEmpty) {
       final candidateDigits = digitRegex
           .allMatches(habitName)
           .map((m) => m.group(1)!)
           .toList();
-      
+
       bool allDigitsMatch = true;
       for (final d in digitMatches) {
         if (!candidateDigits.contains(d)) {
@@ -87,18 +89,18 @@ Future<List<Habit>> searchHabitsByName(String name, {bool test = false}) async {
           break;
         }
       }
-      
+
       if (!allDigitsMatch) {
         return;
       }
     }
-    
+
     // Check if query is contained in the name
     if (habitName.contains(q)) {
       results.add(habit);
       return;
     }
-    
+
     // Then apply the fuzzy matching logic
     int ratioName = ratio(habitName, q);
     if (ratioName > fuzzyVal) {
@@ -119,24 +121,26 @@ Future<List<Habit>> searchHabitsByDescription(
   if (habitsData == null) {
     return results;
   }
-  
+
   final q = description.toLowerCase();
   final digitRegex = RegExp(r'\b(\d+)\b');
-  final digitMatches =
-      digitRegex.allMatches(q).map((m) => m.group(1)!).toList();
-  
+  final digitMatches = digitRegex
+      .allMatches(q)
+      .map((m) => m.group(1)!)
+      .toList();
+
   habitsData.forEach((id, data) {
     Habit habit = Habit.fromJson(data);
     if (habit.description != null) {
       final habitDesc = habit.description!.toLowerCase();
-      
+
       // If query contains digits, require exact digit matching first
       if (digitMatches.isNotEmpty) {
         final candidateDigits = digitRegex
             .allMatches(habitDesc)
             .map((m) => m.group(1)!)
             .toList();
-        
+
         bool allDigitsMatch = true;
         for (final d in digitMatches) {
           if (!candidateDigits.contains(d)) {
@@ -144,18 +148,18 @@ Future<List<Habit>> searchHabitsByDescription(
             break;
           }
         }
-        
+
         if (!allDigitsMatch) {
           return;
         }
       }
-      
+
       // Check if query is contained in the description
       if (habitDesc.contains(q)) {
         results.add(habit);
         return;
       }
-      
+
       // Then apply the fuzzy matching logic
       int ratioDesc = partialRatio(habitDesc, q);
       if (ratioDesc > fuzzyVal) {
