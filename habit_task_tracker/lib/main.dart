@@ -172,6 +172,9 @@ class _MyHomePageState extends State<MyHomePage> {
           ..clear()
           ..addAll(completedMatches);
       });
+
+      // Update progress bar to reflect search results
+      _updateProgressBar(finalResults.length, completedMatches.length);
     } catch (e) {
       debugPrint('searchHabits failed: $e');
     }

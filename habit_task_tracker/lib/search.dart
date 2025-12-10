@@ -4,9 +4,35 @@ import 'package:fuzzywuzzy/fuzzywuzzy.dart';
 
 final db = Localstore.instance;
 final fuzzyVal = 70; // threshold for fuzzy search
+final digitRegex = RegExp(r'\b(\d+)\b');
 
 final collectionHabits = db.collection('data/Habits');
 final collectionTestHabits = db.collection('data/Habits_test');
+
+/// Helper function to check if all digits in the query match the candidate text
+bool _checkDigitMatch(String query, String candidate) {
+  final digitMatches = digitRegex
+      .allMatches(query)
+      .map((m) => m.group(1)!)
+      .toList();
+
+  if (digitMatches.isEmpty) {
+    return true;
+  }
+
+  final candidateDigits = digitRegex
+      .allMatches(candidate)
+      .map((m) => m.group(1)!)
+      .toList();
+
+  for (final digit in digitMatches) {
+    if (!candidateDigits.contains(digit)) {
+      return false;
+    }
+  }
+
+  return true;
+}
 
 Future<List<Habit>> searchHabits({
   DateTime? date1,
@@ -65,34 +91,14 @@ Future<List<Habit>> searchHabitsByName(String name, {bool test = false}) async {
   }
 
   final q = name.toLowerCase();
-  final digitRegex = RegExp(r'\b(\d+)\b');
-  final digitMatches = digitRegex
-      .allMatches(q)
-      .map((m) => m.group(1)!)
-      .toList();
 
   habitsData.forEach((id, data) {
     Habit habit = Habit.fromJson(data);
     final habitName = habit.name.toLowerCase();
 
-    // If query contains digits, require exact digit matching first
-    if (digitMatches.isNotEmpty) {
-      final candidateDigits = digitRegex
-          .allMatches(habitName)
-          .map((m) => m.group(1)!)
-          .toList();
-
-      bool allDigitsMatch = true;
-      for (final d in digitMatches) {
-        if (!candidateDigits.contains(d)) {
-          allDigitsMatch = false;
-          break;
-        }
-      }
-
-      if (!allDigitsMatch) {
-        return;
-      }
+    // Check if digits in query match the habit name
+    if (!_checkDigitMatch(q, habitName)) {
+      return;
     }
 
     // Check if query is contained in the name
@@ -123,35 +129,15 @@ Future<List<Habit>> searchHabitsByDescription(
   }
 
   final q = description.toLowerCase();
-  final digitRegex = RegExp(r'\b(\d+)\b');
-  final digitMatches = digitRegex
-      .allMatches(q)
-      .map((m) => m.group(1)!)
-      .toList();
 
   habitsData.forEach((id, data) {
     Habit habit = Habit.fromJson(data);
     if (habit.description != null) {
       final habitDesc = habit.description!.toLowerCase();
 
-      // If query contains digits, require exact digit matching first
-      if (digitMatches.isNotEmpty) {
-        final candidateDigits = digitRegex
-            .allMatches(habitDesc)
-            .map((m) => m.group(1)!)
-            .toList();
-
-        bool allDigitsMatch = true;
-        for (final d in digitMatches) {
-          if (!candidateDigits.contains(d)) {
-            allDigitsMatch = false;
-            break;
-          }
-        }
-
-        if (!allDigitsMatch) {
-          return;
-        }
+      // Check if digits in query match the habit description
+      if (!_checkDigitMatch(q, habitDesc)) {
+        return;
       }
 
       // Check if query is contained in the description
