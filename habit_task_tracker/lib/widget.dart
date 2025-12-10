@@ -4,9 +4,13 @@ import 'dart:convert';
 
 import 'package:home_widget/home_widget.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'habit.dart';
 import 'log.dart';
-import 'main_helpers.dart' show loadHabitsFromDb, setCompletion, isSameDay;
+import 'main.dart' show navigatorKey;
+import 'main_helpers.dart'
+    show loadHabitsFromDb, setCompletion, isSameDay, showCreateHabitDialog;
+import 'state/habit_state.dart';
 
 @pragma('vm:entry-point')
 class WidgetService {
@@ -161,6 +165,30 @@ class WidgetService {
       await _uncomplete(id);
       // Sync after uncompletion to update widget
       await syncHabitsToWidget();
+    } else if (uri?.host == 'task:add') {
+      final context = navigatorKey.currentContext;
+      if (context == null) {
+        debugPrint(
+          '[WidgetService.interactiveCallback] Cannot open dialog: context is null (app may not be running)',
+        );
+        return;
+      }
+      // this should trigger the add task widget
+      await showCreateHabitDialog(context, (habit) async {
+        // Add habit to state if available
+        if (context.mounted) {
+          try {
+            final habitState = context.read<HabitState>();
+            await habitState.addHabit(habit);
+          } catch (e) {
+            debugPrint(
+              '[WidgetService.interactiveCallback] Failed to add habit to state: $e',
+            );
+          }
+        }
+        // sync to widget
+        await syncHabitsToWidget();
+      });
     }
   }
 }

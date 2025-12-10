@@ -34,6 +34,7 @@ public struct BackgroundIntent: AppIntent {
     }
     
     public func perform() async throws -> some IntentResult {
+        print("performing action for \(method)")
         await HomeWidgetBackgroundWorker.run(
           url: URL(string: "habitWidget://\(method)?id=\(id)"),
           appGroup: "group.com.example.habitTaskTrackerGroup")
