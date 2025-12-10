@@ -4,8 +4,8 @@ import 'package:habit_task_tracker/frequency.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:habit_task_tracker/log.dart';
-import 'package:habit_task_tracker/notifier.dart' as notifier;
 import 'package:habit_task_tracker/uuid.dart';
+import 'package:habit_task_tracker/notifier.dart' as notifier;
 
 // I got help from Copilot to write the following functions.
 
@@ -118,6 +118,7 @@ Future<Habit> createAndPersistHabit(
   DateTime? endDate,
   bool isRecurring = false,
   Frequency? frequency,
+  List<String>? times,
 }) async {
   final DateTime s = startDate ?? DateTime.now();
   final DateTime e = endDate ?? s.add(const Duration(days: 1));
@@ -159,6 +160,7 @@ Future<void> showCreateHabitDialog(
 ) async {
   final titleController = TextEditingController();
   final descController = TextEditingController();
+  final timesController = TextEditingController();
   final dateController = TextEditingController();
   final endDateController = TextEditingController();
   DateTime? selectedStartDate;
@@ -209,6 +211,15 @@ Future<void> showCreateHabitDialog(
                     textAlignVertical: TextAlignVertical.top,
                   ),
                   const SizedBox(height: 12),
+                  // Times input (comma-separated HH:MM)
+                  TextField(
+                    controller: timesController,
+                    decoration: const InputDecoration(
+                      labelText: 'Times (comma-separated)',
+                    ),
+                    keyboardType: TextInputType.text,
+                  ),
+                  const SizedBox(height: 12),
                   // Recurring toggle
                   Row(
                     children: [
@@ -230,6 +241,8 @@ Future<void> showCreateHabitDialog(
                     Row(
                       children: [
                         const Text('Frequency'),
+
+                        // NEED TO CREATE A TIME FIELD
                         const SizedBox(width: 12),
                         DropdownButton<Frequency>(
                           value: selectedFrequency,
@@ -396,6 +409,7 @@ Future<void> showCreateHabitDialog(
 
   titleController.dispose();
   descController.dispose();
+  timesController.dispose();
   dateController.dispose();
   endDateController.dispose();
 }
