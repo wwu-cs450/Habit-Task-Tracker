@@ -405,27 +405,22 @@ Future<List<DateTime>> getHabitDates(
   return dates;
 }
 
+bool _isSameDay(DateTime a, DateTime b) {
+  final la = a.toLocal();
+  final lb = b.toLocal();
+  return la.year == lb.year && la.month == lb.month && la.day == lb.day;
+}
+
 Future<List<Habit>> getHabitsForToday({
   DateTime? date,
   bool test = false,
 }) async {
   final today = date ?? DateTime.now();
-  List<Habit> habitsForToday = [];
-  // Filter habits that are active today
-  final habits = (await searchAllHabits(test: test)).where((habit) {
-    return (habit.startDate.isBefore(today) ||
-            habit.startDate.isAtSameMomentAs(today)) &&
-        (habit.endDate.isAfter(today) || habit.endDate.isAtSameMomentAs(today));
+  final habits = await searchAllHabits(test: test);
+  
+  return habits.where((habit) {
+    final isStarted = habit.startDate.isBefore(today) || _isSameDay(habit.startDate, today);
+    final notEnded = habit.endDate.isAfter(today) || _isSameDay(habit.endDate, today);
+    return isStarted && notEnded;
   }).toList();
-
-  for (Habit habit in habits) {
-    final habitDates = await getHabitDates(habit.gId, today, test: test);
-    for (DateTime habitDate in habitDates) {
-      if (isSameDay(habitDate, today)) {
-        habitsForToday.add(habit);
-        break;
-      }
-    }
-  }
-  return habitsForToday;
 }
