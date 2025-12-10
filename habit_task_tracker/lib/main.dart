@@ -9,7 +9,6 @@ import 'main_helpers.dart';
 import 'package:google_fonts/google_fonts.dart';
 // import 'search.dart';
 import 'calendar.dart';
-import 'timer.dart';
 import 'uuid.dart';
 import 'package:fuzzywuzzy/fuzzywuzzy.dart';
 
@@ -402,7 +401,7 @@ class _MyHomePageState extends State<MyHomePage> {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (_) => const TimerPage(habits: []),
+                      builder: (_) => TimerPage(habits: _habits),
                     ),
                   );
                 },

@@ -13,18 +13,17 @@ class TimerPage extends StatefulWidget {
 }
 
 class _TimerPageState extends State<TimerPage> {
-  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      key: _scaffoldKey,
       appBar: AppBar(
-        leading: IconButton(
-          icon: const Icon(Icons.menu),
-          onPressed: () => _scaffoldKey.currentState?.openDrawer(),
+        leading: Builder(
+          builder: (context) => IconButton(
+            icon: const Icon(Icons.menu),
+            onPressed: () => Scaffold.of(context).openDrawer(),
+          ),
         ),
-        backgroundColor: const Color.fromARGB(255, 221, 146, 181),
+        backgroundColor: Theme.of(context).colorScheme.primary,
         title: const Text("Timer"),
         centerTitle: true,
       ),
@@ -108,10 +107,7 @@ class _TimerWidgetState extends State<TimerWidget> {
   int _seconds = 0;
   int _minutes = 0;
   int _hours = 0;
-  int _initialSeconds = 0;
-  int _initialHours = 0;
-  int _initialMinutes = 0;
-  int _initialSecondsValue = 0;
+  int _initialTotalSeconds = 0;
   Timer? _timer;
   bool _isRunning = false;
 
@@ -125,14 +121,16 @@ class _TimerWidgetState extends State<TimerWidget> {
     _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
       if (_hours == 0 && _minutes == 0 && _seconds == 0) {
         timer.cancel();
+        if (!mounted) return;
         setState(() {
           _isRunning = false;
-          _hours = _initialHours;
-          _minutes = _initialMinutes;
-          _seconds = _initialSecondsValue;
+          _hours = _initialTotalSeconds ~/ 3600;
+          _minutes = (_initialTotalSeconds % 3600) ~/ 60;
+          _seconds = _initialTotalSeconds % 60;
         });
         return;
       }
+      if (!mounted) return;
       setState(() {
         _seconds--;
         if (_seconds < 0) {
@@ -157,9 +155,9 @@ class _TimerWidgetState extends State<TimerWidget> {
   void _resetTimer() {
     setState(() {
       _isRunning = false;
-      _seconds = _initialSecondsValue;
-      _minutes = _initialMinutes;
-      _hours = _initialHours;
+      _seconds = _initialTotalSeconds % 60;
+      _minutes = (_initialTotalSeconds % 3600) ~/ 60;
+      _hours = _initialTotalSeconds ~/ 3600;
     });
     _timer?.cancel();
   }
@@ -170,8 +168,8 @@ class _TimerWidgetState extends State<TimerWidget> {
 
   double get _progress {
     int totalSeconds = (_hours * 3600) + (_minutes * 60) + _seconds;
-    if (_initialSeconds == 0) return 0.0;
-    return totalSeconds / _initialSeconds;
+    if (_initialTotalSeconds == 0) return 0.0;
+    return totalSeconds / _initialTotalSeconds;
   }
 
   @override
@@ -198,7 +196,7 @@ class _TimerWidgetState extends State<TimerWidget> {
                 width: 280,
                 height: 280,
                 child: CircularProgressIndicator(
-                  value: _isRunning ? _progress : 0.0,
+                  value: _progress,
                   strokeWidth: 4,
                   backgroundColor: Colors.grey[300],
                   valueColor: const AlwaysStoppedAnimation<Color>(Colors.teal),
@@ -208,26 +206,25 @@ class _TimerWidgetState extends State<TimerWidget> {
               Material(
                 color: Colors.transparent,
                 child: InkWell(
-                  onTap: () async {
-                    await showTimePickerDialog(
-                      context,
-                      _hours,
-                      _minutes,
-                      _seconds,
-                      (hours, minutes, seconds) {
-                        setState(() {
-                          _hours = hours;
-                          _minutes = minutes;
-                          _seconds = seconds;
-                          _initialHours = hours;
-                          _initialMinutes = minutes;
-                          _initialSecondsValue = seconds;
-                          _initialSeconds =
-                              (hours * 3600) + (minutes * 60) + seconds;
-                        });
-                      },
-                    );
-                  },
+                  onTap: _isRunning
+                      ? null
+                      : () async {
+                          await showTimePickerDialog(
+                            context,
+                            _hours,
+                            _minutes,
+                            _seconds,
+                            (hours, minutes, seconds) {
+                              setState(() {
+                                _hours = hours;
+                                _minutes = minutes;
+                                _seconds = seconds;
+                                _initialTotalSeconds =
+                                    (hours * 3600) + (minutes * 60) + seconds;
+                              });
+                            },
+                          );
+                        },
                   borderRadius: BorderRadius.circular(140),
                   child: Container(
                     width: 280,
@@ -247,15 +244,21 @@ class _TimerWidgetState extends State<TimerWidget> {
                         Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Icon(Icons.edit, size: 16, color: Colors.grey[600]),
-                            const SizedBox(width: 4),
-                            Text(
-                              "Tap to set time",
-                              style: TextStyle(
-                                fontSize: 12,
+                            if (!_isRunning) ...[
+                              Icon(
+                                Icons.edit,
+                                size: 16,
                                 color: Colors.grey[600],
                               ),
-                            ),
+                              const SizedBox(width: 4),
+                              Text(
+                                "Tap to set time",
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.grey[600],
+                                ),
+                              ),
+                            ],
                           ],
                         ),
                       ],
@@ -268,7 +271,7 @@ class _TimerWidgetState extends State<TimerWidget> {
         ),
         const SizedBox(height: 60),
         // Buttons row
-        if (_initialSeconds == 0)
+        if (_initialTotalSeconds == 0)
           // Start button (when timer not set)
           ElevatedButton(
             onPressed: null,
@@ -283,8 +286,8 @@ class _TimerWidgetState extends State<TimerWidget> {
             child: const Text("Start", style: TextStyle(fontSize: 18)),
           )
         else if (!_isRunning &&
-            (_hours != 0 || _minutes != 0 || _seconds != 0) &&
-            _initialSeconds == ((_hours * 3600) + (_minutes * 60) + _seconds))
+            _initialTotalSeconds ==
+                ((_hours * 3600) + (_minutes * 60) + _seconds))
           // Start button (when timer is set but never started)
           ElevatedButton(
             onPressed: () {
