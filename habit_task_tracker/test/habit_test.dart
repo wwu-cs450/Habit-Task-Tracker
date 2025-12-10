@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:habit_task_tracker/habit.dart';
 import 'package:habit_task_tracker/frequency.dart';
+import 'package:habit_task_tracker/recurrence.dart';
 import 'package:habit_task_tracker/uuid.dart';
 import '_setup_mocks.dart';
 
@@ -371,6 +372,60 @@ void main() {
           DateTime(2024, 2, 29),
         ]),
       );
+    });
+
+    test("Get today's habits", () async {
+      final today = DateTime.now();
+      final habit1 = Habit.oneTime(
+        name: 'Today Habit 1',
+        startDate: today,
+        endDate: today,
+      );
+      final habit2 = Habit.recurring(
+        name: 'Today Habit 2',
+        startDate: today.subtract(Duration(days: 5)),
+        endDate: today.add(Duration(days: 5)),
+      ).addRecurrence(Frequency.daily);
+      final habit3 = Habit.oneTime(
+        name: 'Not Today Habit',
+        startDate: today.add(Duration(days: 1)),
+        endDate: today.add(Duration(days: 2)),
+      );
+
+      final todaysHabitIds = [habit1.gId, habit2.gId];
+
+      await saveTestHabit(habit1);
+      await saveTestHabit(habit2);
+      await saveTestHabit(habit3);
+
+      final habitsForToday = await getHabitsForToday(date: today, test: true);
+
+      expect(habitsForToday.length, 2);
+      expect(
+        habitsForToday.map((e) => e.gId).toList(),
+        containsAll(todaysHabitIds),
+      );
+    });
+
+    test('Change Habit recurrences', () async {
+      final habit = Habit.recurring(
+        name: 'Test Habit',
+        startDate: DateTime(2024, 1, 1),
+        endDate: DateTime(2024, 12, 31),
+      ).addRecurrence(Frequency.daily);
+
+      final habitId = habit.gId;
+      await saveTestHabit(habit);
+
+      // Update recurrences
+      final newRecurrences = [
+        Recurrence(freq: Frequency.weekly, startDate: DateTime(2024, 1, 1)),
+      ];
+      await changeHabit(habitId, recurrences: newRecurrences, test: true);
+
+      final loadedHabit = await loadTestHabit(habitId);
+      expect(loadedHabit.gRecurrences.length, 1);
+      expect(loadedHabit.gRecurrences.first.freq, Frequency.weekly);
     });
   });
 }
