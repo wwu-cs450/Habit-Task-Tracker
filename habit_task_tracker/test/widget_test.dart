@@ -16,7 +16,7 @@ import '_setup_mocks.dart';
 void main() {
   setUpAll(setupMocks);
 
-  testWidgets('Adding a habit with the FAB increases the card count', (
+  testWidgets('Adding a habit increases the card count', (
     WidgetTester tester,
   ) async {
     // Build our app and trigger a frame.
@@ -34,9 +34,15 @@ void main() {
     await tester.tap(find.byIcon(Icons.add));
     await tester.pumpAndSettle();
 
-    // Populate the fields in the dialog
-    await tester.enterText(find.byType(TextField).at(0), 'Test Habit');
-    await tester.enterText(find.byType(TextField).at(1), 'Test description');
+    // Populate the fields in the dialog. Find only TextFields inside the
+    // AlertDialog so we don't accidentally type into the global search field.
+    final dialogFields = find.descendant(
+      of: find.byType(AlertDialog),
+      matching: find.byType(TextField),
+    );
+
+    await tester.enterText(dialogFields.at(0), 'Test Habit');
+    await tester.enterText(dialogFields.at(1), 'Test description');
 
     // Save the habit
     await tester.tap(find.text('Save'));
@@ -47,12 +53,43 @@ void main() {
 
     // Test deleting habits
 
-    // Tap the card for the habit that was just added
-    await tester.tap(find.text('Test Habit'));
-    await tester.pumpAndSettle();
+    // Tap the ListTile for the habit that was just added (ensures onTap fires).
+    final titleFinder = find.text('Test Habit');
+    expect(titleFinder, findsOneWidget);
 
-    // Click the delete button
-    final deleteFinder = find.widgetWithIcon(IconButton, Icons.delete).first;
+    // Find the Card that contains the habit and tap its ListTile to expand.
+    final cardFinder = find.byType(Card);
+    expect(cardFinder, findsOneWidget);
+    final listTileInCard = find.descendant(
+      of: cardFinder,
+      matching: find.byType(ListTile),
+    );
+
+    if (listTileInCard.evaluate().isNotEmpty) {
+      await tester.tap(listTileInCard);
+    } else {
+      await tester.tap(titleFinder);
+    }
+    // Allow more time for AnimatedSize and other UI transitions.
+    await tester.pump(const Duration(milliseconds: 500));
+    await tester.pumpAndSettle(const Duration(seconds: 1));
+
+    // Click the delete button. Expand the card if necessary
+    final deleteFinder = find.widgetWithIcon(IconButton, Icons.delete);
+    if (deleteFinder.evaluate().isEmpty) {
+      if (listTileInCard.evaluate().isNotEmpty) {
+        await tester.tap(listTileInCard);
+      }
+      await tester.pump(const Duration(milliseconds: 500));
+      await tester.pumpAndSettle(const Duration(seconds: 1));
+    }
+
+    if (deleteFinder.evaluate().isEmpty) {
+      fail('Delete button not found after expanding card');
+    }
+
+    await tester.ensureVisible(deleteFinder);
+    expect(deleteFinder, findsOneWidget);
     await tester.tap(deleteFinder);
     await tester.pumpAndSettle();
 

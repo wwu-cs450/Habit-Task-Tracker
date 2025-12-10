@@ -1,47 +1,45 @@
 import 'package:habit_task_tracker/habit.dart';
 import 'package:localstore/localstore.dart';
-import 'dart:io';
 import 'package:fuzzywuzzy/fuzzywuzzy.dart';
 
 final db = Localstore.instance;
 final fuzzyVal = 70; // threshold for fuzzy search
 
-// check if //data/habits exists
-final filePath = Directory('data/Habits');
-bool exists = filePath.existsSync();
-final collectionHabits = exists ? db.collection('data/Habits') : null;
+final collectionHabits = db.collection('data/Habits');
+final collectionTestHabits = db.collection('data/Habits_test');
 
 Future<List<Habit>> searchHabits({
   DateTime? date1,
   DateTime? date2,
   String? name,
   String? description,
+  bool test = false,
 }) {
   Future<List<Habit>> results = Future.value([]);
-  if (!exists) {
-    return results;
-  }
   if (date1 != null && date2 != null) {
-    return searchHabitsBetweenDates(date1, date2);
+    return searchHabitsBetweenDates(date1, date2, test: test);
   } else if (name != null) {
-    return searchHabitsByName(name);
+    return searchHabitsByName(name, test: test);
   } else if (description != null) {
-    return searchHabitsByDescription(description);
+    return searchHabitsByDescription(description, test: test);
   } else if (date1 == null &&
       date2 == null &&
       name == null &&
       description == null) {
-    return searchAllHabits();
+    return searchAllHabits(test: test);
   }
   return results;
 }
 
 Future<List<Habit>> searchHabitsBetweenDates(
   DateTime date1,
-  DateTime date2,
-) async {
+  DateTime date2, {
+  bool test = false,
+}) async {
   List<Habit> results = [];
-  final habitsData = await collectionHabits?.get();
+  final habitsData = await (test
+      ? collectionTestHabits.get()
+      : collectionHabits.get());
   if (habitsData == null) {
     return results;
   }
@@ -57,9 +55,11 @@ Future<List<Habit>> searchHabitsBetweenDates(
   return results;
 }
 
-Future<List<Habit>> searchHabitsByName(String name) async {
+Future<List<Habit>> searchHabitsByName(String name, {bool test = false}) async {
   List<Habit> results = [];
-  final habitsData = await collectionHabits?.get();
+  final habitsData = await (test
+      ? collectionTestHabits.get()
+      : collectionHabits.get());
   if (habitsData == null) {
     return results;
   }
@@ -73,9 +73,14 @@ Future<List<Habit>> searchHabitsByName(String name) async {
   return results;
 }
 
-Future<List<Habit>> searchHabitsByDescription(String description) async {
+Future<List<Habit>> searchHabitsByDescription(
+  String description, {
+  bool test = false,
+}) async {
   List<Habit> results = [];
-  final habitsData = await collectionHabits?.get();
+  final habitsData = await (test
+      ? collectionTestHabits.get()
+      : collectionHabits.get());
   if (habitsData == null) {
     return results;
   }
@@ -95,9 +100,11 @@ Future<List<Habit>> searchHabitsByDescription(String description) async {
   return results;
 }
 
-Future<List<Habit>> searchAllHabits() async {
+Future<List<Habit>> searchAllHabits({bool test = false}) async {
   List<Habit> results = [];
-  final habitsData = await collectionHabits?.get();
+  final habitsData = await (test
+      ? collectionTestHabits.get()
+      : collectionHabits.get());
   if (habitsData == null) {
     return results;
   }
