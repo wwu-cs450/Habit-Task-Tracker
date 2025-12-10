@@ -411,12 +411,28 @@ Future<List<Habit>> getHabitsForToday({
 }) async {
   final today = date ?? DateTime.now();
   final habits = await searchAllHabits(test: test);
+  final habitsForToday = <Habit>[];
 
-  return habits.where((habit) {
+  for (final habit in habits) {
+    // Check if today falls within the date range
     final isStarted =
         habit.startDate.isBefore(today) || isSameDay(habit.startDate, today);
     final notEnded =
         habit.endDate.isAfter(today) || isSameDay(habit.endDate, today);
-    return isStarted && notEnded;
-  }).toList();
+
+    if (!isStarted || !notEnded) {
+      continue;
+    }
+
+    // Get the habit dates for today to verify it matches the recurrence pattern
+    final habitDates = await getHabitDates(habit.gId, today, test: test);
+    for (final habitDate in habitDates) {
+      if (isSameDay(habitDate, today)) {
+        habitsForToday.add(habit);
+        break;
+      }
+    }
+  }
+
+  return habitsForToday;
 }

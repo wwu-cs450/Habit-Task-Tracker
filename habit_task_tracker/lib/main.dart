@@ -172,7 +172,6 @@ class _MyHomePageState extends State<MyHomePage> {
           ..clear()
           ..addAll(completedMatches);
       });
-
     } catch (e) {
       debugPrint('searchHabits failed: $e');
     }
