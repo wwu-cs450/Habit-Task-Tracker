@@ -110,8 +110,6 @@ class _MyHomePageState extends State<MyHomePage> {
 
   Future<void> _searchHabitsFromDb(String value) async {
     final trimmedValue = value.trim();
-    debugPrint('Search input from search.dart: "$trimmedValue"');
-
     try {
       List<Habit> results = [];
 
@@ -145,11 +143,6 @@ class _MyHomePageState extends State<MyHomePage> {
       // Search by name and description
       results = await _performTextSearch(trimmedValue);
 
-      debugPrint('Results before dedup: ${results.length}');
-      debugPrint(
-        'Result IDs before dedup: ${results.map((h) => h.gId).toList()}',
-      );
-
       // Sort results by startDate (newest first) to match the original order
       results.sort((a, b) => b.startDate.compareTo(a.startDate));
 
@@ -162,13 +155,6 @@ class _MyHomePageState extends State<MyHomePage> {
           finalResults.add(habit);
         }
       }
-
-      debugPrint(
-        'searchHabits results for "$trimmedValue": ${finalResults.length} habits found',
-      );
-      debugPrint(
-        'Final result IDs: ${finalResults.map((h) => h.gId).toList()}',
-      );
 
       if (!mounted) return;
 
@@ -187,7 +173,6 @@ class _MyHomePageState extends State<MyHomePage> {
           ..addAll(completedMatches);
       });
 
-      debugPrint('_habits length after setState: ${_habits.length}');
     } catch (e) {
       debugPrint('searchHabits failed: $e');
     }
