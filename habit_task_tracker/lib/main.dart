@@ -401,7 +401,9 @@ class _MyHomePageState extends State<MyHomePage> {
                   Navigator.pop(context);
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (_) => const TimerPage()),
+                    MaterialPageRoute(
+                      builder: (_) => const TimerPage(habits: []),
+                    ),
                   );
                 },
               ),
