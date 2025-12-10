@@ -119,11 +119,12 @@ class _MyHomePageState extends State<MyHomePage> {
         // If empty, load today's habits
         final result = await loadHabitsFromDb();
         results = (result['habits'] as List<dynamic>).cast<Habit>();
-        
+
         if (!mounted) return;
-        
-        final completed = (result['completedIds'] as Set<dynamic>).cast<String>();
-        
+
+        final completed = (result['completedIds'] as Set<dynamic>)
+            .cast<String>();
+
         setState(() {
           _habits = results;
           _allHabits = List<Habit>.from(results);
@@ -145,7 +146,9 @@ class _MyHomePageState extends State<MyHomePage> {
       results = await _performTextSearch(trimmedValue);
 
       debugPrint('Results before dedup: ${results.length}');
-      debugPrint('Result IDs before dedup: ${results.map((h) => h.gId).toList()}');
+      debugPrint(
+        'Result IDs before dedup: ${results.map((h) => h.gId).toList()}',
+      );
 
       // Sort results by startDate (newest first) to match the original order
       results.sort((a, b) => b.startDate.compareTo(a.startDate));
@@ -163,7 +166,9 @@ class _MyHomePageState extends State<MyHomePage> {
       debugPrint(
         'searchHabits results for "$trimmedValue": ${finalResults.length} habits found',
       );
-      debugPrint('Final result IDs: ${finalResults.map((h) => h.gId).toList()}');
+      debugPrint(
+        'Final result IDs: ${finalResults.map((h) => h.gId).toList()}',
+      );
 
       if (!mounted) return;
 
@@ -181,7 +186,7 @@ class _MyHomePageState extends State<MyHomePage> {
           ..clear()
           ..addAll(completedMatches);
       });
-      
+
       debugPrint('_habits length after setState: ${_habits.length}');
     } catch (e) {
       debugPrint('searchHabits failed: $e');
@@ -192,28 +197,28 @@ class _MyHomePageState extends State<MyHomePage> {
   Future<List<Habit>> _performTextSearch(String query) async {
     // Try searching by name first
     final nameResults = await searchHabits(name: query);
-    
+
     // Also search by description
     final descResults = await searchHabits(description: query);
-    
+
     // Merge results, avoiding duplicates using gId
     final seenIds = <String>{};
     final results = <Habit>[];
-    
+
     for (final habit in nameResults) {
       if (!seenIds.contains(habit.gId)) {
         seenIds.add(habit.gId);
         results.add(habit);
       }
     }
-    
+
     for (final habit in descResults) {
       if (!seenIds.contains(habit.gId)) {
         seenIds.add(habit.gId);
         results.add(habit);
       }
     }
-    
+
     return results;
   }
 
