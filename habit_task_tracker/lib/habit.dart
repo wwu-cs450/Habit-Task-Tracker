@@ -405,12 +405,6 @@ Future<List<DateTime>> getHabitDates(
   return dates;
 }
 
-bool _isSameDay(DateTime a, DateTime b) {
-  final la = a.toLocal();
-  final lb = b.toLocal();
-  return la.year == lb.year && la.month == lb.month && la.day == lb.day;
-}
-
 Future<List<Habit>> getHabitsForToday({
   DateTime? date,
   bool test = false,
@@ -420,9 +414,9 @@ Future<List<Habit>> getHabitsForToday({
 
   return habits.where((habit) {
     final isStarted =
-        habit.startDate.isBefore(today) || _isSameDay(habit.startDate, today);
+        habit.startDate.isBefore(today) || isSameDay(habit.startDate, today);
     final notEnded =
-        habit.endDate.isAfter(today) || _isSameDay(habit.endDate, today);
+        habit.endDate.isAfter(today) || isSameDay(habit.endDate, today);
     return isStarted && notEnded;
   }).toList();
 }
