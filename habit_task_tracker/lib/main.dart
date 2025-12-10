@@ -116,12 +116,33 @@ class _MyHomePageState extends State<MyHomePage> {
       List<Habit> results = [];
 
       if (trimmedValue.isEmpty) {
-        // If empty, return all habits
-        results = await searchHabits();
-      } else {
-        // Search by name and description
-        results = await _performTextSearch(trimmedValue);
+        // If empty, load today's habits
+        final result = await loadHabitsFromDb();
+        results = (result['habits'] as List<dynamic>).cast<Habit>();
+        
+        if (!mounted) return;
+        
+        final completed = (result['completedIds'] as Set<dynamic>).cast<String>();
+        
+        setState(() {
+          _habits = results;
+          _allHabits = List<Habit>.from(results);
+          _expanded
+            ..clear()
+            ..addAll(List<bool>.filled(_habits.length, false));
+          _completedToday
+            ..clear()
+            ..addAll(completed);
+          _allCompletedToday
+            ..clear()
+            ..addAll(completed);
+        });
+        _updateProgressBar(_habits.length, _completedToday.length);
+        return;
       }
+
+      // Search by name and description
+      results = await _performTextSearch(trimmedValue);
 
       debugPrint('Results before dedup: ${results.length}');
       debugPrint('Result IDs before dedup: ${results.map((h) => h.gId).toList()}');
