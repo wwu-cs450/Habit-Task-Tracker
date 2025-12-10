@@ -14,7 +14,7 @@ import '_setup_mocks.dart';
 void main() {
   setUpAll(setupMocks);
 
-  testWidgets('Adding a habit increases the card count', (
+  testWidgets('Adding and deleting habits works', (
     WidgetTester tester,
   ) async {
     // Build our app and trigger a frame.
