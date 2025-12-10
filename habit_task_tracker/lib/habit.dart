@@ -301,6 +301,12 @@ Future<List<DateTime>> getHabitDates(
   bool test = false,
 }) async {
   Habit habit = test ? await loadTestHabit(id) : await loadHabit(id);
+  return _getHabitDatesFromHabit(habit, limit);
+}
+
+/// Helper function to calculate habit dates without loading from database.
+/// This is more efficient when you already have the Habit object.
+List<DateTime> _getHabitDatesFromHabit(Habit habit, DateTime limit) {
   if (habit.isRecurring == false) {
     return [habit.startDate];
   }
@@ -424,8 +430,8 @@ Future<List<Habit>> getHabitsForToday({
       continue;
     }
 
-    // Get the habit dates for today to verify it matches the recurrence pattern
-    final habitDates = await getHabitDates(habit.gId, today, test: test);
+    // Get the habit dates for today using the optimized helper that doesn't reload from DB
+    final habitDates = _getHabitDatesFromHabit(habit, today);
     for (final habitDate in habitDates) {
       if (isSameDay(habitDate, today)) {
         habitsForToday.add(habit);
