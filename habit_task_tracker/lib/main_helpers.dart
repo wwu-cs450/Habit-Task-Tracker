@@ -11,34 +11,12 @@ import 'package:habit_task_tracker/notifier.dart' as notifier;
 
 /// Load habits from the DB and their status for today
 Future<Map<String, dynamic>> loadHabitsFromDb() async {
-  final Map<String, dynamic>? all = await db.collection('data/Habits').get();
-  final List<Habit> list = <Habit>[];
+  final List<Habit> list = await getHabitsForToday();
   final List<bool> loadedCompleted = <bool>[];
-  if (all != null) {
-    for (final entry in all.entries) {
-      final String id = entry.key;
-      final Map<String, dynamic> rawMap = Map<String, dynamic>.from(
-        entry.value,
-      );
-      try {
-        final Habit habit = await loadHabit(id);
-        list.add(habit);
-        final bool completedToday = await _isCompletedToday(habit);
-        loadedCompleted.add(completedToday);
-      } catch (e) {
-        // If loadHabit fails, attempt a JSON parse fallback.
-        try {
-          final Habit habit = Habit.fromJson(rawMap);
-          list.add(habit);
-          final bool completedToday = await _isCompletedToday(habit);
-          loadedCompleted.add(completedToday);
-        } catch (err) {
-          debugPrint(
-            'Failed to load habit $id. loadHabit() error: $e; fromJson() error: $err',
-          );
-        }
-      }
-    }
+  
+  for (final Habit habit in list) {
+    final bool completedToday = await _isCompletedToday(habit);
+    loadedCompleted.add(completedToday);
   }
 
   // Match habits with their completed status, then sort them so newest is first

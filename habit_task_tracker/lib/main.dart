@@ -209,7 +209,6 @@ class _MyHomePageState extends State<MyHomePage> {
   void _onSearchChanged(String value) {
     _searchDebounce?.cancel();
     _searchDebounce = Timer(const Duration(milliseconds: 300), () {
-      // _localSearch(value);
       _searchHabitsFromDb(value);
     });
   }
