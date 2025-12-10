@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'habit.dart';
 import 'log.dart';
+import 'uuid.dart';
 import 'main.dart' show navigatorKey;
 import 'main_helpers.dart'
     show loadHabitsFromDb, setCompletion, isSameDay, showCreateHabitDialog;
@@ -59,7 +60,11 @@ class WidgetService {
     // if (habit.completedDates.any((d) => isSameDay(d, DateTime.now()))) {
     //   return;
     // }
-    final completed = await setCompletion(habitId, true, habit.description);
+    final completed = await setCompletion(
+      Uuid.fromString(habitId),
+      true,
+      habit.description,
+    );
 
     if (!completed) {
       throw Exception('Failed to complete habit');
@@ -78,7 +83,11 @@ class WidgetService {
       return;
     }
 
-    final completed = await setCompletion(habitId, false, habit.description);
+    final completed = await setCompletion(
+      Uuid.fromString(habitId),
+      false,
+      habit.description,
+    );
 
     if (!completed) {
       throw Exception('Failed to uncomplete habit with id $habitId');
@@ -93,7 +102,7 @@ class WidgetService {
   /// Check if a habit is completed for a specific day
   static Future<bool> _isCompletedForDay(String habitId, DateTime day) async {
     try {
-      final log = await loadLog(habitId);
+      final log = await loadLog(Uuid.fromString(habitId));
       return log.gTimeStamps.any((dt) => isSameDay(dt, day));
     } catch (_) {
       return false;

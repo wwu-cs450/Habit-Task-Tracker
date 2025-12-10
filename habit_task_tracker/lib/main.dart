@@ -2,7 +2,6 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:habit_task_tracker/notifier.dart' as notifier;
-import 'package:habit_task_tracker/recurrence.dart';
 import 'main_helpers.dart';
 import 'package:google_fonts/google_fonts.dart';
 // import 'search.dart';
@@ -10,8 +9,6 @@ import 'calendar.dart';
 import 'widget.dart';
 import 'state/habit_state.dart';
 import 'timer.dart';
-import 'uuid.dart';
-import 'package:fuzzywuzzy/fuzzywuzzy.dart';
 
 // I got some help from GitHub CoPilot with this code. I also got some ideas from
 // this youtube video: https://www.youtube.com/watch?v=K4P5DZ9TRns
@@ -77,8 +74,17 @@ class MyHomePage extends StatefulWidget {
 
 // Main state class for the home page
 class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
-  // State for the home page
-  final HabitState _habitState = HabitState();
+  // Debounce timer for search input
+  Timer? _searchDebounce;
+
+  // Scaffold key for drawer access
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
+
+  // Map to track which habits are expanded
+  final Map<String, bool> _expanded = {};
+
+  // Search query
+  String _searchQuery = '';
 
   @override
   void initState() {
@@ -99,40 +105,33 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
 
   @override
   void dispose() {
+    _searchDebounce?.cancel();
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }
 
   // Debounced onChanged handler to avoid calling the search on every keystroke
   void _onSearchChanged(String value) {
+    setState(() {
+      _searchQuery = value;
+    });
     _searchDebounce?.cancel();
     _searchDebounce = Timer(const Duration(milliseconds: 300), () {
       _localSearch(value);
     });
   }
 
-  @override
-  void dispose() {
-    _searchDebounce?.cancel();
-    super.dispose();
+  // Local search implementation
+  void _localSearch(String query) {
+    // Search is handled by filtering in the build method
+    // This method can be used for additional search logic if needed
+    setState(() {
+      _searchQuery = query;
+    });
   }
 
   // Format DateTime to Date string
   String _format(DateTime d) => d.toIso8601String().split('T').first;
-
-  // Format recurrence details to string
-  String _recurrenceText(List<Recurrence> recurrences) {
-    if (recurrences.isEmpty) {
-      return 'No';
-    }
-    // Get frequency strings
-    return recurrences
-        .map((f) => frequencyToString(f.freq))
-        // Unique frequencies only
-        .toSet()
-        .toList()
-        .join(', ');
-  }
 
   // Main body build method
   @override
@@ -232,13 +231,23 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
             return Center(child: Text('Error: ${habitState.error}'));
           }
 
+          // Filter habits based on search query
+          final filteredHabits = _searchQuery.isEmpty
+              ? habitState.habits
+              : habitState.habits.where((habit) {
+                  final query = _searchQuery.toLowerCase();
+                  return habit.name.toLowerCase().contains(query) ||
+                      (habit.description?.toLowerCase().contains(query) ??
+                          false);
+                }).toList();
+
           // Ensure expanded map has entries for all habits
-          for (final habit in habitState.habits) {
+          for (final habit in filteredHabits) {
             _expanded.putIfAbsent(habit.gId, () => false);
           }
           // Remove entries for habits that no longer exist
           _expanded.removeWhere(
-            (id, _) => !habitState.habits.any((h) => h.gId == id),
+            (id, _) => !filteredHabits.any((h) => h.gId == id),
           );
 
           return Padding(
@@ -311,13 +320,13 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
                 // List of Habits
                 Expanded(
                   child: ListView.separated(
-                    itemCount: habitState.habits.length,
+                    itemCount: filteredHabits.length,
                     // Card spacing
                     separatorBuilder: (context, index) =>
                         const SizedBox(height: 10),
                     // Cards
                     itemBuilder: (context, index) {
-                      final habit = habitState.habits[index];
+                      final habit = filteredHabits[index];
                       final isCompleted = habitState.completedToday.contains(
                         habit.gId,
                       );
@@ -426,7 +435,7 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
                                             const SizedBox(width: 6),
                                             Flexible(
                                               child: Text(
-                                                'Recurring: ${habit.gIsRecurring ? frequencyToString(habit.gFrequency) : "No"}',
+                                                'Recurring: ${habit.gIsRecurring && habit.gRecurrences.isNotEmpty ? frequencyToString(habit.gRecurrences.first.freq) : "No"}',
                                               ),
                                             ),
                                           ],

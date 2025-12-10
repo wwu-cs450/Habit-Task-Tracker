@@ -2,6 +2,8 @@ import 'package:habit_task_tracker/backend.dart';
 import 'package:habit_task_tracker/habit.dart';
 import 'package:habit_task_tracker/log.dart';
 import 'package:habit_task_tracker/main_helpers.dart';
+import 'package:habit_task_tracker/frequency.dart';
+import 'package:habit_task_tracker/uuid.dart';
 import 'package:flutter/foundation.dart';
 
 /// Repository for habit data operations
@@ -71,13 +73,17 @@ class HabitRepository {
   }) async {
     // Note: date parameter is reserved for future use
     // Currently setCompletion uses DateTime.now() internally
-    return await setCompletion(habitId, completed, description);
+    return await setCompletion(
+      Uuid.fromString(habitId),
+      completed,
+      description,
+    );
   }
 
   /// Check if a habit is completed for a specific date
   Future<bool> _isCompletedForDate(Habit habit, DateTime date) async {
     try {
-      final log = await loadLog(habit.gId);
+      final log = await loadLog(Uuid.fromString(habit.gId));
       return log.gTimeStamps.any((dt) => isSameDay(dt, date));
     } catch (_) {
       return false;
