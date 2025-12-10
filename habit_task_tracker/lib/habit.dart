@@ -430,7 +430,6 @@ Future<List<Habit>> getHabitsForToday({
       continue;
     }
 
-    // Get the habit dates for today using the optimized helper that doesn't reload from DB
     final habitDates = _getHabitDatesFromHabit(habit, today);
     for (final habitDate in habitDates) {
       if (isSameDay(habitDate, today)) {
