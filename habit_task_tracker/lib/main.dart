@@ -421,21 +421,6 @@ class _MyHomePageState extends State<MyHomePage> {
                   );
                 },
               ),
-
-              ListTile(
-                leading: const Icon(Icons.timer),
-                title: const Text('Timer'),
-                onTap: () {
-                  debugPrint('Timer tapped');
-                  Navigator.pop(context);
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => TimerPage(habits: _habits),
-                    ),
-                  );
-                },
-              ),
             ],
           ),
         ),

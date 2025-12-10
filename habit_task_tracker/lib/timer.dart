@@ -24,6 +24,7 @@ class _TimerPageState extends State<TimerPage> {
           icon: const Icon(Icons.menu),
           onPressed: () => _scaffoldKey.currentState?.openDrawer(),
         ),
+        backgroundColor: const Color.fromARGB(255, 221, 146, 181),
         title: const Text("Timer"),
         centerTitle: true,
       ),
@@ -91,7 +92,7 @@ class _TimerPageState extends State<TimerPage> {
           ),
         ),
       ),
-      body: Center(child: TimerWidget()),
+      body: const Center(child: TimerWidget()),
     );
   }
 }
@@ -173,6 +174,12 @@ class _TimerWidgetState extends State<TimerWidget> {
     return totalSeconds / _initialSeconds;
   }
 
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
   // AI made the UI based on the design from Figma
 
   @override
@@ -194,7 +201,7 @@ class _TimerWidgetState extends State<TimerWidget> {
                   value: _isRunning ? _progress : 0.0,
                   strokeWidth: 4,
                   backgroundColor: Colors.grey[300],
-                  valueColor: AlwaysStoppedAnimation<Color>(Colors.teal),
+                  valueColor: const AlwaysStoppedAnimation<Color>(Colors.teal),
                 ),
               ),
               // Timer text with visual cue
@@ -231,17 +238,17 @@ class _TimerWidgetState extends State<TimerWidget> {
                       children: [
                         Text(
                           "${_formatTime(_hours)}:${_formatTime(_minutes)}:${_formatTime(_seconds)}",
-                          style: TextStyle(
+                          style: const TextStyle(
                             fontSize: 48,
                             fontWeight: FontWeight.w300,
                           ),
                         ),
-                        SizedBox(height: 8),
+                        const SizedBox(height: 8),
                         Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             Icon(Icons.edit, size: 16, color: Colors.grey[600]),
-                            SizedBox(width: 4),
+                            const SizedBox(width: 4),
                             Text(
                               "Tap to set time",
                               style: TextStyle(
@@ -259,10 +266,26 @@ class _TimerWidgetState extends State<TimerWidget> {
             ],
           ),
         ),
-        SizedBox(height: 60),
+        const SizedBox(height: 60),
         // Buttons row
-        if (!_isRunning)
-          // Start button (when not running)
+        if (_initialSeconds == 0)
+          // Start button (when timer not set)
+          ElevatedButton(
+            onPressed: null,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.teal,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 50, vertical: 15),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(30),
+              ),
+            ),
+            child: const Text("Start", style: TextStyle(fontSize: 18)),
+          )
+        else if (!_isRunning &&
+            (_hours != 0 || _minutes != 0 || _seconds != 0) &&
+            _initialSeconds == ((_hours * 3600) + (_minutes * 60) + _seconds))
+          // Start button (when timer is set but never started)
           ElevatedButton(
             onPressed: () {
               _startTimer();
@@ -270,51 +293,39 @@ class _TimerWidgetState extends State<TimerWidget> {
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.teal,
               foregroundColor: Colors.white,
-              padding: EdgeInsets.symmetric(horizontal: 50, vertical: 15),
+              padding: const EdgeInsets.symmetric(horizontal: 50, vertical: 15),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(30),
               ),
             ),
-            child: Text("Start", style: TextStyle(fontSize: 18)),
+            child: const Text("Start", style: TextStyle(fontSize: 18)),
           )
         else
-          // Control buttons (when running)
+          // Control buttons (when timer has been started - running or paused)
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              // Play/Resume button (green)
+              // Pause/Resume toggle button
               Container(
                 decoration: BoxDecoration(
-                  color: Colors.teal,
+                  color: _isRunning ? Colors.grey[700] : Colors.teal,
                   shape: BoxShape.circle,
                 ),
                 child: IconButton(
                   onPressed: () {
-                    _startTimer();
+                    if (_isRunning) {
+                      _pauseTimer();
+                    } else {
+                      _startTimer();
+                    }
                   },
-                  icon: Icon(Icons.play_arrow),
+                  icon: Icon(_isRunning ? Icons.pause : Icons.play_arrow),
                   iconSize: 32,
                   color: Colors.white,
                 ),
               ),
-              SizedBox(width: 20),
-              // Pause button (grey)
-              Container(
-                decoration: BoxDecoration(
-                  color: Colors.grey[700],
-                  shape: BoxShape.circle,
-                ),
-                child: IconButton(
-                  onPressed: () {
-                    _pauseTimer();
-                  },
-                  icon: Icon(Icons.pause),
-                  iconSize: 32,
-                  color: Colors.white,
-                ),
-              ),
-              SizedBox(width: 20),
-              // Reset button (grey)
+              const SizedBox(width: 20),
+              // Reset button
               Container(
                 decoration: BoxDecoration(
                   color: Colors.grey[700],
@@ -324,7 +335,7 @@ class _TimerWidgetState extends State<TimerWidget> {
                   onPressed: () {
                     _resetTimer();
                   },
-                  icon: Icon(Icons.refresh),
+                  icon: const Icon(Icons.refresh),
                   iconSize: 32,
                   color: Colors.white,
                 ),
