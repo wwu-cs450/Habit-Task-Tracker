@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:habit_task_tracker/log.dart';
-import 'package:habit_task_tracker/habit.dart';
+import 'package:habit_task_tracker/frequency.dart';
+import 'package:habit_task_tracker/uuid.dart';
 import '_setup_mocks.dart';
 
 // Test to verify saving and loading Log objects from the localstore database
@@ -11,8 +12,9 @@ void main() {
     test('Save and Load Log', () async {
       // Create a test log
       DateTime testTimestamp = DateTime(2025, 11, 5, 10, 30);
+      final habitId = Uuid.generate();
       Log testLog = Log(
-        habitId: 'habit_123',
+        habitId: habitId,
         timeStamps: [testTimestamp],
         notes: 'Drank 30 gallons of water',
       );
@@ -32,7 +34,8 @@ void main() {
     test('Save and Load Log without notes', () async {
       // Create a test log without notes
       DateTime testTimestamp = DateTime(2025, 11, 5, 14, 45);
-      Log testLog = Log(habitId: 'habit_456', timeStamps: [testTimestamp]);
+      final habitId = Uuid.generate();
+      Log testLog = Log(habitId: habitId, timeStamps: [testTimestamp]);
 
       // Save the log to the database
       await saveLog(testLog);
@@ -48,7 +51,8 @@ void main() {
 
     test('Load non-existent log throws exception', () async {
       // Attempt to load a log that doesn't exist
-      expect(() async => await loadLog('nonexistent_log'), throwsException);
+      final nonExistentId = Uuid.generate();
+      expect(() async => await loadLog(nonExistentId), throwsException);
     });
   });
 
@@ -58,8 +62,9 @@ void main() {
       final startDate = now.subtract(
         const Duration(days: 2),
       ); // 3 days including today
+      final habitId = Uuid.generate();
       Log log = Log(
-        habitId: 'habit_789',
+        habitId: habitId,
         timeStamps: [startDate, startDate.add(const Duration(days: 1)), now],
       );
       // 3 completions in 3 days, should be 100%
@@ -75,14 +80,16 @@ void main() {
     });
 
     test('updateTimeStamps adds timestamp and saves', () async {
-      Log log = Log(habitId: 'habit_999');
+      final habitId = Uuid.generate();
+      Log log = Log(habitId: habitId);
       DateTime newTime = DateTime(2025, 11, 13, 12, 0);
       await log.updateTimeStamps(newTime);
       expect(log.gTimeStamps.contains(newTime), isTrue);
     });
 
     test('updateNotes updates notes and saves', () async {
-      Log log = Log(habitId: 'habit_888', notes: 'Initial note');
+      final habitId = Uuid.generate();
+      Log log = Log(habitId: habitId, notes: 'Initial note');
       String updatedNote = 'Updated note';
       await log.updateNotes(updatedNote);
       expect(log.gNotes, equals(updatedNote));

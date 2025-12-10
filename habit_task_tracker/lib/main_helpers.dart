@@ -1,8 +1,10 @@
 import 'package:habit_task_tracker/backend.dart';
 import 'package:habit_task_tracker/habit.dart';
+import 'package:habit_task_tracker/frequency.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:habit_task_tracker/log.dart';
+import 'package:habit_task_tracker/uuid.dart';
 import 'package:habit_task_tracker/notifier.dart' as notifier;
 
 // I got help from Copilot to write the following functions.
@@ -116,26 +118,38 @@ Future<Habit> createAndPersistHabit(
   DateTime? endDate,
   bool isRecurring = false,
   Frequency? frequency,
+  List<String>? times,
 }) async {
-  final id = DateTime.now().millisecondsSinceEpoch.toString();
   final DateTime s = startDate ?? DateTime.now();
   final DateTime e = endDate ?? s.add(const Duration(days: 1));
   final Frequency effectiveFrequency = isRecurring
       ? (frequency ?? Frequency.daily)
       : (frequency ?? Frequency.none);
 
-  final habit = Habit(
-    id: id,
-    name: title,
-    description: description,
-    startDate: s,
-    endDate: e,
-    isRecurring: isRecurring,
-    frequency: effectiveFrequency,
-  ).withNotification();
+  final Habit habit;
+
+  if (isRecurring) {
+    habit = Habit.recurring(
+      name: title,
+      description: description,
+      startDate: s,
+      endDate: e,
+    ).withNotification();
+  } else {
+    habit = Habit.oneTime(
+      name: title,
+      description: description,
+      startDate: s,
+      endDate: e,
+    ).withNotification();
+  }
+
+  if (isRecurring) {
+    habit.addRecurrence(effectiveFrequency);
+  }
 
   final Map<String, dynamic> m = habit.toJson();
-  await db.collection('data/Habits').doc(id).set(m);
+  await db.collection('data/Habits').doc(habit.gId).set(m);
   return habit;
 }
 
@@ -146,6 +160,7 @@ Future<void> showCreateHabitDialog(
 ) async {
   final titleController = TextEditingController();
   final descController = TextEditingController();
+  final timesController = TextEditingController();
   final dateController = TextEditingController();
   final endDateController = TextEditingController();
   DateTime? selectedStartDate;
@@ -196,6 +211,15 @@ Future<void> showCreateHabitDialog(
                     textAlignVertical: TextAlignVertical.top,
                   ),
                   const SizedBox(height: 12),
+                  // Times input (comma-separated HH:MM)
+                  TextField(
+                    controller: timesController,
+                    decoration: const InputDecoration(
+                      labelText: 'Times (comma-separated)',
+                    ),
+                    keyboardType: TextInputType.text,
+                  ),
+                  const SizedBox(height: 12),
                   // Recurring toggle
                   Row(
                     children: [
@@ -217,6 +241,8 @@ Future<void> showCreateHabitDialog(
                     Row(
                       children: [
                         const Text('Frequency'),
+
+                        // NEED TO CREATE A TIME FIELD
                         const SizedBox(width: 12),
                         DropdownButton<Frequency>(
                           value: selectedFrequency,
@@ -383,6 +409,7 @@ Future<void> showCreateHabitDialog(
 
   titleController.dispose();
   descController.dispose();
+  timesController.dispose();
   dateController.dispose();
   endDateController.dispose();
 }
@@ -412,7 +439,7 @@ bool isSameDay(DateTime a, DateTime b) {
 
 /// Persist completion state for a habit for "today".
 Future<bool> setCompletion(
-  String habitId,
+  Uuid habitId,
   bool completed,
   String? description,
 ) async {
@@ -436,7 +463,7 @@ Future<bool> setCompletion(
         final existingLog = await loadLog(habitId);
         existingLog.timeStamps.removeWhere((dt) => isSameDay(dt, now));
         if (existingLog.timeStamps.isEmpty) {
-          await deleteData('Logs', habitId);
+          await deleteData('Logs', habitId.toString());
         } else {
           await saveLog(existingLog);
         }
@@ -454,7 +481,7 @@ Future<bool> setCompletion(
 /// Check whether a Habit has a log timestamp for today.
 Future<bool> _isCompletedToday(Habit habit) async {
   try {
-    final l = await loadLog(habit.gId);
+    final l = await loadLog(Uuid.fromString(habit.gId));
     final now = DateTime.now();
     return l.gTimeStamps.any((dt) => isSameDay(dt, now));
   } catch (_) {

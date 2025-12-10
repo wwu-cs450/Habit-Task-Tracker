@@ -1,10 +1,17 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:habit_task_tracker/notifier.dart' as notifier;
+import 'package:habit_task_tracker/recurrence.dart';
 import 'main_helpers.dart';
+import 'package:google_fonts/google_fonts.dart';
+// import 'search.dart';
 import 'calendar.dart';
 import 'widget.dart';
 import 'state/habit_state.dart';
+import 'timer.dart';
+import 'uuid.dart';
+import 'package:fuzzywuzzy/fuzzywuzzy.dart';
 
 // I got some help from GitHub CoPilot with this code. I also got some ideas from
 // this youtube video: https://www.youtube.com/watch?v=K4P5DZ9TRns
@@ -28,7 +35,6 @@ Future<void> main() async {
       }
     }
   });
-
   runApp(
     ChangeNotifierProvider(
       create: (_) => HabitState()..loadHabits(),
@@ -51,6 +57,7 @@ class MyApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(
           seedColor: const Color.fromARGB(255, 0, 0, 0),
         ),
+        textTheme: GoogleFonts.merriweatherTextTheme(),
         useMaterial3: true,
       ),
       home: const MyHomePage(title: 'Habits'),
@@ -70,9 +77,8 @@ class MyHomePage extends StatefulWidget {
 
 // Main state class for the home page
 class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
-  // Track which habit cards are expanded in the UI
-  final Map<String, bool> _expanded = {};
-  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
+  // State for the home page
+  final HabitState _habitState = HabitState();
 
   @override
   void initState() {
@@ -97,14 +103,43 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
     super.dispose();
   }
 
+  // Debounced onChanged handler to avoid calling the search on every keystroke
+  void _onSearchChanged(String value) {
+    _searchDebounce?.cancel();
+    _searchDebounce = Timer(const Duration(milliseconds: 300), () {
+      _localSearch(value);
+    });
+  }
+
+  @override
+  void dispose() {
+    _searchDebounce?.cancel();
+    super.dispose();
+  }
+
   // Format DateTime to Date string
   String _format(DateTime d) => d.toIso8601String().split('T').first;
+
+  // Format recurrence details to string
+  String _recurrenceText(List<Recurrence> recurrences) {
+    if (recurrences.isEmpty) {
+      return 'No';
+    }
+    // Get frequency strings
+    return recurrences
+        .map((f) => frequencyToString(f.freq))
+        // Unique frequencies only
+        .toSet()
+        .toList()
+        .join(', ');
+  }
 
   // Main body build method
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       key: _scaffoldKey,
+      backgroundColor: Colors.white,
       // Top App Bar (Header)
       appBar: AppBar(
         // Hamburger menu button to open navigation menu
@@ -112,7 +147,8 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
           icon: const Icon(Icons.menu),
           onPressed: () => _scaffoldKey.currentState?.openDrawer(),
         ),
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
+        backgroundColor: const Color.fromARGB(255, 221, 146, 181),
+        // backgroundColor: Theme.of(context).colorScheme.inversePrimary,
         title: Text(widget.title),
       ),
 
@@ -150,18 +186,29 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
                 },
               ),
 
+              ListTile(
+                leading: const Icon(Icons.timer),
+                title: const Text('Timer'),
+                onTap: () {
+                  Navigator.pop(context);
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const TimerPage()),
+                  );
+                },
+              ),
+              // Navigate to Calendar Page
               Consumer<HabitState>(
                 builder: (context, habitState, child) {
                   return ListTile(
                     leading: const Icon(Icons.calendar_today),
                     title: const Text('Calendar'),
                     onTap: () {
-                      debugPrint('Calendar tapped');
                       Navigator.pop(context);
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (_) =>
+                          builder: (context) =>
                               CalendarPage(habits: habitState.habits),
                         ),
                       );
@@ -198,6 +245,49 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
             padding: const EdgeInsets.all(16.0),
             child: Column(
               children: [
+                // Search Bar
+                SizedBox(
+                  height: 44,
+                  child: TextField(
+                    decoration: InputDecoration(
+                      hintText: 'Search Habits',
+                      prefixIcon: const Icon(Icons.search, size: 20),
+                      isDense: true,
+                      contentPadding: const EdgeInsets.symmetric(
+                        vertical: 8,
+                        horizontal: 12,
+                      ),
+                      filled: true,
+                      fillColor: Colors.grey.shade100,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(
+                          color: Colors.grey.shade400,
+                          width: 1.5,
+                        ),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(
+                          color: Colors.grey.shade400,
+                          width: 1.5,
+                        ),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(
+                          color: Colors.grey.shade600,
+                          width: 2.0,
+                        ),
+                      ),
+                    ),
+                    // Handle searching
+                    onChanged: (value) {
+                      _onSearchChanged(value);
+                    },
+                    style: const TextStyle(fontSize: 14),
+                  ),
+                ),
                 // Progress Bar
                 Padding(
                   padding: const EdgeInsets.symmetric(vertical: 8.0),
@@ -209,7 +299,7 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
                           minHeight: 10,
                           // NEED TO DECIDE WHAT COLORS TO USE HERE
                           backgroundColor: Colors.grey.shade300,
-                          color: Colors.greenAccent,
+                          color: const Color.fromARGB(255, 28, 164, 255),
                         ),
                       ),
                       const SizedBox(width: 12),
