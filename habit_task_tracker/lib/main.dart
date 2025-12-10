@@ -3,13 +3,13 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:habit_task_tracker/notifier.dart' as notifier;
 import 'package:habit_task_tracker/recurrence.dart';
+import 'habit.dart';
 import 'main_helpers.dart';
 import 'package:google_fonts/google_fonts.dart';
 // import 'search.dart';
 import 'calendar.dart';
 import 'state/habit_state.dart';
 import 'timer.dart';
-import 'uuid.dart';
 import 'package:fuzzywuzzy/fuzzywuzzy.dart';
 
 // I got some help from GitHub CoPilot with this code. I also got some ideas from
@@ -108,33 +108,8 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    _searchDebounce?.cancel();
     super.dispose();
-    // Load habits from the database and save it to the UI state
-    loadHabitsFromDb()
-        .then((result) {
-          if (!mounted) return;
-          final List<Habit> habits = (result['habits'] as List<dynamic>)
-              .cast<Habit>();
-          final Set<String> completed = (result['completedIds'] as Set<dynamic>)
-              .cast<String>();
-          setState(() {
-            _habits = habits;
-            _allHabits = List<Habit>.from(habits);
-            _completedToday.clear();
-            _completedToday.addAll(completed);
-            _allCompletedToday
-              ..clear()
-              ..addAll(completed);
-            _expanded.clear();
-            for (var _ in _habits) {
-              _expanded.add(false);
-            }
-          });
-          _updateProgressBar(_habits.length, _completedToday.length);
-        })
-        .catchError((e) {
-          debugPrint('Error loading habits: $e');
-        });
   }
 
   // TEMPORARY LOCAL SEARCH METHOD UNTIL search.dart IS FIXED
@@ -160,17 +135,19 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
             _allCompletedToday
               ..clear()
               ..addAll(completed);
-            _expanded
-              ..clear()
-              ..addAll(List<bool>.filled(_habits.length, false));
+            _expanded.clear();
+            for (final habit in _habits) {
+              _expanded[habit.gId] = false;
+            }
           });
         } else {
           if (!mounted) return;
           setState(() {
             _habits = List<Habit>.from(_allHabits);
-            _expanded
-              ..clear()
-              ..addAll(List<bool>.filled(_habits.length, false));
+            _expanded.clear();
+            for (final habit in _habits) {
+              _expanded[habit.gId] = false;
+            }
             // Restore the completed set from the cached full-set
             _completedToday
               ..clear()
@@ -227,13 +204,21 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
 
         // Date filtering
         if (startFilter != null) {
-          if (!isSameDay(h.startDate, startFilter)) {
+          if (h.startDate.year != startFilter.year ||
+              h.startDate.month != startFilter.month ||
+              h.startDate.day != startFilter.day) {
             continue;
           }
         }
         if (bareDateFilter != null) {
-          final startMatches = isSameDay(h.startDate, bareDateFilter);
-          final endMatches = isSameDay(h.endDate, bareDateFilter);
+          final startMatches =
+              h.startDate.year == bareDateFilter.year &&
+              h.startDate.month == bareDateFilter.month &&
+              h.startDate.day == bareDateFilter.day;
+          final endMatches =
+              h.endDate.year == bareDateFilter.year &&
+              h.endDate.month == bareDateFilter.month &&
+              h.endDate.day == bareDateFilter.day;
           if (!startMatches && !endMatches) {
             continue;
           }
@@ -316,9 +301,10 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
 
       setState(() {
         _habits = results;
-        _expanded
-          ..clear()
-          ..addAll(List<bool>.filled(_habits.length, false));
+        _expanded.clear();
+        for (final habit in _habits) {
+          _expanded[habit.gId] = false;
+        }
         _completedToday
           ..clear()
           ..addAll(completedMatches);
@@ -328,27 +314,12 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
     }
   }
 
-  // Method for updating the Progress Bar
-  void _updateProgressBar(int total, int done) {
-    final double p = total == 0 ? 0.0 : done / total;
-    if (!mounted) return;
-    setState(() {
-      progress = p;
-    });
-  }
-
   // Debounced onChanged handler to avoid calling the search on every keystroke
   void _onSearchChanged(String value) {
     _searchDebounce?.cancel();
     _searchDebounce = Timer(const Duration(milliseconds: 300), () {
       _localSearch(value);
     });
-  }
-
-  @override
-  void dispose() {
-    _searchDebounce?.cancel();
-    super.dispose();
   }
 
   // Format DateTime to Date string
@@ -660,7 +631,7 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
                                             const SizedBox(width: 6),
                                             Flexible(
                                               child: Text(
-                                                'Recurring: ${habit.gIsRecurring ? frequencyToString(habit.gFrequency) : "No"}',
+                                                'Recurring: ${habit.gIsRecurring ? _recurrenceText(habit.gRecurrences) : "No"}',
                                               ),
                                             ),
                                           ],
