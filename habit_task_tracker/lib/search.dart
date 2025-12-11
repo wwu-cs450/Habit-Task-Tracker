@@ -4,6 +4,7 @@ import 'package:fuzzywuzzy/fuzzywuzzy.dart';
 
 final db = Localstore.instance;
 final fuzzyVal = 70; // threshold for fuzzy search
+final digitRegex = RegExp(r'\b(\d+)\b');
 
 final collectionHabits = db.collection('data/Habits');
 final collectionTestHabits = db.collection('data/Habits_test');
@@ -63,9 +64,26 @@ Future<List<Habit>> searchHabitsByName(String name, {bool test = false}) async {
   if (habitsData == null) {
     return results;
   }
+
+  final q = name.toLowerCase();
+
   habitsData.forEach((id, data) {
     Habit habit = Habit.fromJson(data);
-    int ratioName = ratio(habit.name.toLowerCase(), name.toLowerCase());
+    final habitName = habit.name.toLowerCase();
+
+    // Exact digit match
+    if (!_checkDigitMatch(q, habitName)) {
+      return;
+    }
+
+    // Exact contains match
+    if (habitName.contains(q)) {
+      results.add(habit);
+      return;
+    }
+
+    // Fuzzy match
+    int ratioName = ratio(habitName, q);
     if (ratioName > fuzzyVal) {
       results.add(habit);
     }
@@ -84,13 +102,27 @@ Future<List<Habit>> searchHabitsByDescription(
   if (habitsData == null) {
     return results;
   }
+
+  final q = description.toLowerCase();
+
   habitsData.forEach((id, data) {
     Habit habit = Habit.fromJson(data);
     if (habit.description != null) {
-      int ratioDesc = partialRatio(
-        habit.description!.toLowerCase(),
-        description.toLowerCase(),
-      );
+      final habitDesc = habit.description!.toLowerCase();
+
+      // Exact digit match
+      if (!_checkDigitMatch(q, habitDesc)) {
+        return;
+      }
+
+      // exact contains match
+      if (habitDesc.contains(q)) {
+        results.add(habit);
+        return;
+      }
+
+      // Fuzzy match
+      int ratioDesc = partialRatio(habitDesc, q);
       if (ratioDesc > fuzzyVal) {
         results.add(habit);
       }
@@ -113,4 +145,29 @@ Future<List<Habit>> searchAllHabits({bool test = false}) async {
     results.add(habit);
   });
   return results;
+}
+
+// Helper function to check for exact digit matches
+bool _checkDigitMatch(String query, String candidate) {
+  final digitMatches = digitRegex
+      .allMatches(query)
+      .map((m) => m.group(1)!)
+      .toList();
+
+  if (digitMatches.isEmpty) {
+    return true;
+  }
+
+  final candidateDigits = digitRegex
+      .allMatches(candidate)
+      .map((m) => m.group(1)!)
+      .toList();
+
+  for (final digit in digitMatches) {
+    if (!candidateDigits.contains(digit)) {
+      return false;
+    }
+  }
+
+  return true;
 }

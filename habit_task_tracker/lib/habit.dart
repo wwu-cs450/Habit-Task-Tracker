@@ -301,6 +301,12 @@ Future<List<DateTime>> getHabitDates(
   bool test = false,
 }) async {
   Habit habit = test ? await loadTestHabit(id) : await loadHabit(id);
+  return _getHabitDatesFromHabit(habit, limit);
+}
+
+/// Helper function to calculate habit dates without loading from database.
+/// This is more efficient when you already have the Habit object.
+List<DateTime> _getHabitDatesFromHabit(Habit habit, DateTime limit) {
   if (habit.isRecurring == false) {
     return [habit.startDate];
   }
@@ -410,22 +416,28 @@ Future<List<Habit>> getHabitsForToday({
   bool test = false,
 }) async {
   final today = date ?? DateTime.now();
-  List<Habit> habitsForToday = [];
-  // Filter habits that are active today
-  final habits = (await searchAllHabits(test: test)).where((habit) {
-    return (habit.startDate.isBefore(today) ||
-            habit.startDate.isAtSameMomentAs(today)) &&
-        (habit.endDate.isAfter(today) || habit.endDate.isAtSameMomentAs(today));
-  }).toList();
+  final habits = await searchAllHabits(test: test);
+  final habitsForToday = <Habit>[];
 
-  for (Habit habit in habits) {
-    final habitDates = await getHabitDates(habit.gId, today, test: test);
-    for (DateTime habitDate in habitDates) {
+  for (final habit in habits) {
+    // Check if today falls within the date range
+    final isStarted =
+        habit.startDate.isBefore(today) || isSameDay(habit.startDate, today);
+    final notEnded =
+        habit.endDate.isAfter(today) || isSameDay(habit.endDate, today);
+
+    if (!isStarted || !notEnded) {
+      continue;
+    }
+
+    final habitDates = _getHabitDatesFromHabit(habit, today);
+    for (final habitDate in habitDates) {
       if (isSameDay(habitDate, today)) {
         habitsForToday.add(habit);
         break;
       }
     }
   }
+
   return habitsForToday;
 }

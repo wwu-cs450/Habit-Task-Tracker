@@ -6,13 +6,12 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'habit.dart';
 import 'main_helpers.dart';
 import 'package:google_fonts/google_fonts.dart';
-// import 'search.dart';
+import 'search.dart';
 import 'calendar.dart';
 import 'timer.dart';
 import 'uuid.dart';
-import 'package:fuzzywuzzy/fuzzywuzzy.dart';
 
-// I got some help from GitHub CoPilot with this code. I also got some ideas from
+// I got help from GitHub CoPilot with this code. I also got some ideas from
 // this youtube video: https://www.youtube.com/watch?v=K4P5DZ9TRns
 
 Future<void> main() async {
@@ -33,7 +32,6 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'Habit Task Tracker',
       theme: ThemeData(
-        // Need to decide what color scheme to use
         colorScheme: ColorScheme.fromSeed(
           seedColor: const Color.fromARGB(255, 0, 0, 0),
         ),
@@ -65,15 +63,15 @@ class MyHomePage extends StatefulWidget {
 class _MyHomePageState extends State<MyHomePage> {
   // Create list to store habits
   List<Habit> _habits = <Habit>[];
-  // Cached copy of all habits loaded from the DB to avoid reloading every keystroke
+  // Cached copy of all habits loaded from the DB (used with searching to restore)
   List<Habit> _allHabits = <Habit>[];
   // Debounce timer for search input
   Timer? _searchDebounce;
   // Track which habit IDs have a log timestamp for today.
   final Set<String> _completedToday = <String>{};
-  // Cached set of completed IDs for the full habit list (used when searching)
+  // Cached set of completed IDs for the full habit list (used with searching to restore)
   final Set<String> _allCompletedToday = <String>{};
-  // Track which habit cards are expanded in the UI
+  // Track which habit cards are expanded
   final List<bool> _expanded = <bool>[];
 
   double progress = 0.0;
@@ -110,185 +108,62 @@ class _MyHomePageState extends State<MyHomePage> {
         });
   }
 
-  // TEMPORARY LOCAL SEARCH METHOD UNTIL search.dart IS FIXED
-  void _localSearch(String value) async {
+  Future<void> _searchHabitsFromDb(String value) async {
     final trimmedValue = value.trim();
-    debugPrint('Search input: "$trimmedValue"');
-
-    if (trimmedValue.isEmpty) {
-      try {
-        if (_allHabits.isEmpty) {
-          final result = await loadHabitsFromDb();
-          if (!mounted) return;
-          final List<Habit> habits = (result['habits'] as List<dynamic>)
-              .cast<Habit>();
-          final Set<String> completed = (result['completedIds'] as Set<dynamic>)
-              .cast<String>();
-          _allHabits = List<Habit>.from(habits);
-          setState(() {
-            _habits = habits;
-            _completedToday
-              ..clear()
-              ..addAll(completed);
-            _allCompletedToday
-              ..clear()
-              ..addAll(completed);
-            _expanded
-              ..clear()
-              ..addAll(List<bool>.filled(_habits.length, false));
-          });
-        } else {
-          if (!mounted) return;
-          setState(() {
-            _habits = List<Habit>.from(_allHabits);
-            _expanded
-              ..clear()
-              ..addAll(List<bool>.filled(_habits.length, false));
-            // Restore the completed set from the cached full-set
-            _completedToday
-              ..clear()
-              ..addAll(_allCompletedToday);
-          });
-        }
-      } catch (e) {
-        debugPrint('Search reload failed: $e');
-      }
-      return;
-    }
-
     try {
-      // Temporary in-memory search fallback while search.dart is being fixed
-      List<Habit> allHabits;
-      if (_allHabits.isNotEmpty) {
-        allHabits = _allHabits;
-      } else {
-        final all = await loadHabitsFromDb();
-        allHabits = (all['habits'] as List<dynamic>).cast<Habit>();
-        _allHabits = List<Habit>.from(allHabits);
+      List<Habit> results = [];
+
+      if (trimmedValue.isEmpty) {
+        final result = await loadHabitsFromDb();
+        results = (result['habits'] as List<dynamic>).cast<Habit>();
+
+        if (!mounted) return;
+
+        final completed = (result['completedIds'] as Set<dynamic>)
+            .cast<String>();
+
+        setState(() {
+          _habits = results;
+          _allHabits = List<Habit>.from(results);
+          _expanded
+            ..clear()
+            ..addAll(List<bool>.filled(_habits.length, false));
+          _completedToday
+            ..clear()
+            ..addAll(completed);
+          _allCompletedToday
+            ..clear()
+            ..addAll(completed);
+        });
+        _updateProgressBar(_habits.length, _completedToday.length);
+        return;
       }
 
-      // Date formatting
-      final lower = trimmedValue.toLowerCase();
-      final startTokenMatch = RegExp(
-        r'start:\s*(\d{4}-\d{2}-\d{2})',
-        caseSensitive: false,
-      ).firstMatch(lower);
-      DateTime? startFilter;
-      var textOnly = lower;
-      if (startTokenMatch != null) {
-        startFilter = DateTime.tryParse(startTokenMatch.group(1)!);
-        textOnly = textOnly.replaceAll(startTokenMatch.group(0)!, '').trim();
-      }
+      // Search by name and description
+      results = await _performTextSearch(trimmedValue);
 
-      // Date searching
-      final bareDateMatch = RegExp(
-        r"\b(\d{4}-\d{2}-\d{2})\b",
-      ).firstMatch(textOnly);
-      DateTime? bareDateFilter;
-      if (bareDateMatch != null) {
-        bareDateFilter = DateTime.tryParse(bareDateMatch.group(1)!);
-        textOnly = textOnly.replaceAll(bareDateMatch.group(0)!, '').trim();
-      }
+      // Sort results by startDate (newest first) to match the original order
+      results.sort((a, b) => b.startDate.compareTo(a.startDate));
 
-      final q = textOnly;
-      const int tempFuzzyVal = 70;
-      final List<Habit> results = [];
-
-      for (final h in allHabits) {
-        final name = h.name.toLowerCase();
-        final desc = (h.description ?? '').toLowerCase();
-
-        // Date filtering
-        if (startFilter != null) {
-          if (!isSameDay(h.startDate, startFilter)) {
-            continue;
-          }
-        }
-        if (bareDateFilter != null) {
-          final startMatches = isSameDay(h.startDate, bareDateFilter);
-          final endMatches = isSameDay(h.endDate, bareDateFilter);
-          if (!startMatches && !endMatches) {
-            continue;
-          }
-        }
-        if (q.isEmpty) {
-          results.add(h);
-          continue;
-        }
-
-        // Exact match or whole-word matching
-        final pattern = RegExp(r'\b' + RegExp.escape(q) + r'\b');
-        if (name == q || pattern.hasMatch(name) || pattern.hasMatch(desc)) {
-          results.add(h);
-          continue;
-        }
-
-        // Simple description checking
-        if (desc.contains(q)) {
-          results.add(h);
-          continue;
-        }
-
-        // If the query contains numbers
-        // require those numbers to match
-        // exactly in the name/description. This
-        // prevents fuzzy partial matches like "habit 1" matching
-        // "habit 10".
-        final digitRegex = RegExp(r'\b(\d+)\b');
-        final digitMatches = digitRegex
-            .allMatches(q)
-            .map((m) => m.group(1)!)
-            .toList();
-        if (digitMatches.isNotEmpty) {
-          final candidateDigits = <String>[];
-          candidateDigits.addAll(
-            digitRegex.allMatches(name).map((m) => m.group(1)!).toList(),
-          );
-          candidateDigits.addAll(
-            digitRegex.allMatches(desc).map((m) => m.group(1)!).toList(),
-          );
-
-          bool allDigitsMatchAsPrefix = true;
-          for (final d in digitMatches) {
-            final found = candidateDigits.any((t) => t.startsWith(d));
-            if (!found) {
-              allDigitsMatchAsPrefix = false;
-              break;
-            }
-          }
-          if (!allDigitsMatchAsPrefix) {
-            continue;
-          }
-        }
-
-        // If no exact matches, do fuzzy matching
-        final int nameScore = partialRatio(name, q);
-        if (nameScore > tempFuzzyVal) {
-          results.add(h);
-          continue;
-        }
-
-        if (h.description != null) {
-          final int descScore = partialRatio(desc, q);
-          if (descScore > tempFuzzyVal) {
-            results.add(h);
-          }
+      // Check to remove any duplicates
+      final finalResults = <Habit>[];
+      final seenIds = <String>{};
+      for (final habit in results) {
+        if (!seenIds.contains(habit.gId)) {
+          seenIds.add(habit.gId);
+          finalResults.add(habit);
         }
       }
-
-      debugPrint(
-        'Local search results for "$trimmedValue": ${results.length} habits found',
-      );
 
       if (!mounted) return;
 
-      final Set<String> completedMatches = results
+      final Set<String> completedMatches = finalResults
           .where((h) => _allCompletedToday.contains(h.gId))
           .map((h) => h.gId)
           .toSet();
 
       setState(() {
-        _habits = results;
+        _habits = finalResults;
         _expanded
           ..clear()
           ..addAll(List<bool>.filled(_habits.length, false));
@@ -296,9 +171,41 @@ class _MyHomePageState extends State<MyHomePage> {
           ..clear()
           ..addAll(completedMatches);
       });
+
+      // Update progress based on how many of the results are checked
+      _updateProgressBar(finalResults.length, completedMatches.length);
     } catch (e) {
-      debugPrint('Search fallback failed: $e');
+      debugPrint('searchHabits failed: $e');
     }
+  }
+
+  /// Helper method to search by name and description
+  Future<List<Habit>> _performTextSearch(String query) async {
+    // Try searching by name first
+    final nameResults = await searchHabits(name: query);
+
+    // Also search by description
+    final descResults = await searchHabits(description: query);
+
+    // Merge results, avoiding duplicates using gId
+    final seenIds = <String>{};
+    final results = <Habit>[];
+
+    for (final habit in nameResults) {
+      if (!seenIds.contains(habit.gId)) {
+        seenIds.add(habit.gId);
+        results.add(habit);
+      }
+    }
+
+    for (final habit in descResults) {
+      if (!seenIds.contains(habit.gId)) {
+        seenIds.add(habit.gId);
+        results.add(habit);
+      }
+    }
+
+    return results;
   }
 
   // Method for updating the Progress Bar
@@ -310,11 +217,11 @@ class _MyHomePageState extends State<MyHomePage> {
     });
   }
 
-  // Debounced onChanged handler to avoid calling the search on every keystroke
+  // Debounced onChanged handler to avoid calling the search every time a key is pressed
   void _onSearchChanged(String value) {
     _searchDebounce?.cancel();
     _searchDebounce = Timer(const Duration(milliseconds: 300), () {
-      _localSearch(value);
+      _searchHabitsFromDb(value);
     });
   }
 
@@ -335,7 +242,6 @@ class _MyHomePageState extends State<MyHomePage> {
     // Get frequency strings
     return recurrences
         .map((f) => frequencyToString(f.freq))
-        // Unique frequencies only
         .toSet()
         .toList()
         .join(', ');
@@ -355,7 +261,6 @@ class _MyHomePageState extends State<MyHomePage> {
           onPressed: () => _scaffoldKey.currentState?.openDrawer(),
         ),
         backgroundColor: const Color.fromARGB(255, 221, 146, 181),
-        // backgroundColor: Theme.of(context).colorScheme.inversePrimary,
         title: Text(widget.title),
       ),
 
@@ -480,7 +385,6 @@ class _MyHomePageState extends State<MyHomePage> {
                     child: LinearProgressIndicator(
                       value: progress,
                       minHeight: 10,
-                      // NEED TO DECIDE WHAT COLORS TO USE HERE
                       backgroundColor: Colors.grey.shade300,
                       color: const Color.fromARGB(255, 28, 164, 255),
                     ),
