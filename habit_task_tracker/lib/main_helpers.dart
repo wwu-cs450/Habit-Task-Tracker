@@ -1,6 +1,7 @@
 import 'package:habit_task_tracker/backend.dart';
 import 'package:habit_task_tracker/habit.dart';
 import 'package:habit_task_tracker/frequency.dart';
+import 'package:habit_task_tracker/recurrence.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:habit_task_tracker/log.dart';
@@ -382,6 +383,274 @@ Future<void> showCreateHabitDialog(
   titleController.dispose();
   descController.dispose();
   timesController.dispose();
+  dateController.dispose();
+  endDateController.dispose();
+}
+
+/// Show the edit-habit dialog and update the habit if confirmed.
+Future<void> showEditHabitDialog(
+  BuildContext context,
+  Habit habit,
+  Future<void> Function(Habit habit) onUpdated,
+) async {
+  final titleController = TextEditingController(text: habit.name);
+  final descController = TextEditingController(text: habit.description ?? '');
+  final dateController = TextEditingController();
+  final endDateController = TextEditingController();
+  DateTime? selectedStartDate = habit.startDate;
+  DateTime? selectedEndDate = habit.endDate;
+  bool selectedRecurring = habit.isRecurring;
+  // Get the first recurrence frequency, or default to daily
+  Frequency selectedFrequency = habit.recurrences.isNotEmpty
+      ? habit.recurrences.first.freq
+      : Frequency.daily;
+
+  String formatDate(DateTime d) {
+    final y = d.year.toString();
+    final m = d.month.toString().padLeft(2, '0');
+    final day = d.day.toString().padLeft(2, '0');
+    return '$y-$m-$day';
+  }
+
+  dateController.text = formatDate(selectedStartDate);
+  endDateController.text = formatDate(selectedEndDate);
+
+  final saved = await showDialog<bool>(
+    context: context,
+    barrierDismissible: true,
+    useRootNavigator: true,
+    builder: (context) {
+      return StatefulBuilder(
+        builder: (context, setState) {
+          return AlertDialog(
+            title: const Text('Edit Habit'),
+            content: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Title field
+                  TextField(
+                    controller: titleController,
+                    decoration: const InputDecoration(labelText: 'Title'),
+                    autofocus: false,
+                  ),
+                  const SizedBox(height: 12),
+                  // Description field
+                  TextField(
+                    controller: descController,
+                    decoration: const InputDecoration(labelText: 'Description'),
+                    keyboardType: TextInputType.multiline,
+                    minLines: 1,
+                    maxLines: 3,
+                    textAlignVertical: TextAlignVertical.top,
+                  ),
+                  const SizedBox(height: 12),
+                  // Recurring toggle
+                  Row(
+                    children: [
+                      const Text('Recurring'),
+                      const Spacer(),
+                      Switch(
+                        value: selectedRecurring,
+                        onChanged: (v) {
+                          setState(() {
+                            selectedRecurring = v;
+                          });
+                        },
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  // Frequency selector visible only if recurring
+                  if (selectedRecurring)
+                    Row(
+                      children: [
+                        const Text('Frequency'),
+                        const SizedBox(width: 12),
+                        DropdownButton<Frequency>(
+                          value: selectedFrequency,
+                          items: const [
+                            DropdownMenuItem(
+                              value: Frequency.daily,
+                              child: Text('Daily'),
+                            ),
+                            DropdownMenuItem(
+                              value: Frequency.weekly,
+                              child: Text('Weekly'),
+                            ),
+                            DropdownMenuItem(
+                              value: Frequency.monthly,
+                              child: Text('Monthly'),
+                            ),
+                            DropdownMenuItem(
+                              value: Frequency.yearly,
+                              child: Text('Yearly'),
+                            ),
+                          ],
+                          onChanged: (f) {
+                            if (f == null) return;
+                            setState(() {
+                              selectedFrequency = f;
+                            });
+                          },
+                        ),
+                      ],
+                    ),
+                  const SizedBox(height: 12),
+                  // Start date field
+                  TextField(
+                    controller: dateController,
+                    readOnly: true,
+                    decoration: const InputDecoration(labelText: 'Start date'),
+                    onTap: () async {
+                      final now = DateTime.now();
+                      final picked = await showDatePicker(
+                        context: context,
+                        initialDate: selectedStartDate ?? now,
+                        firstDate: DateTime(2000),
+                        lastDate: DateTime(now.year + 5),
+                      );
+                      if (picked != null) {
+                        setState(() {
+                          selectedStartDate = picked;
+                          dateController.text = formatDate(picked);
+                        });
+                      }
+                    },
+                  ),
+                  const SizedBox(height: 12),
+                  // End date field
+                  TextField(
+                    controller: endDateController,
+                    readOnly: true,
+                    decoration: const InputDecoration(labelText: 'End date'),
+                    onTap: () async {
+                      final now = DateTime.now();
+                      final init =
+                          selectedEndDate ??
+                          (selectedStartDate ?? now).add(
+                            const Duration(days: 1),
+                          );
+                      final picked = await showDatePicker(
+                        context: context,
+                        initialDate: init,
+                        firstDate: selectedStartDate ?? DateTime(2000),
+                        lastDate: DateTime(now.year + 5),
+                      );
+                      if (picked != null) {
+                        setState(() {
+                          selectedEndDate = picked;
+                          endDateController.text = formatDate(picked);
+                        });
+                      }
+                    },
+                  ),
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () async {
+                  final navigator = Navigator.of(context, rootNavigator: true);
+                  FocusManager.instance.primaryFocus?.unfocus();
+                  try {
+                    await SystemChannels.textInput.invokeMethod(
+                      'TextInput.hide',
+                    );
+                  } catch (_) {}
+                  await Future.delayed(const Duration(milliseconds: 150));
+                  navigator.pop(false);
+                },
+                child: const Text('Cancel'),
+              ),
+              TextButton(
+                onPressed: () async {
+                  final navigator = Navigator.of(context, rootNavigator: true);
+                  FocusManager.instance.primaryFocus?.unfocus();
+                  try {
+                    await SystemChannels.textInput.invokeMethod(
+                      'TextInput.hide',
+                    );
+                  } catch (_) {}
+                  await Future.delayed(const Duration(milliseconds: 150));
+                  navigator.pop(true);
+                },
+                child: const Text('Save'),
+              ),
+            ],
+          );
+        },
+      );
+    },
+  );
+
+  if (saved == true) {
+    final title = titleController.text.isEmpty
+        ? 'New Habit'
+        : titleController.text.trim();
+    final desc = descController.text.trim();
+    try {
+      // Ensure that end date is on or after start date
+      if (selectedStartDate != null && selectedEndDate != null) {
+        final startDateOnly = DateTime(
+          selectedStartDate!.year,
+          selectedStartDate!.month,
+          selectedStartDate!.day,
+        );
+        final endDateOnly = DateTime(
+          selectedEndDate!.year,
+          selectedEndDate!.month,
+          selectedEndDate!.day,
+        );
+        if (endDateOnly.isBefore(startDateOnly)) {
+          if (context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('End date must be the same or after start date'),
+              ),
+            );
+          }
+          return;
+        }
+      }
+
+      // Prepare recurrences list
+      List<Recurrence> newRecurrences = [];
+      if (selectedRecurring) {
+        newRecurrences = [
+          Recurrence(
+            freq: selectedFrequency,
+            startDate: selectedStartDate ?? habit.startDate,
+          ),
+        ];
+      }
+
+      // Update the habit using changeHabit
+      await changeHabit(
+        habit.gId,
+        name: title,
+        description: desc.isEmpty ? null : desc,
+        startDate: selectedStartDate,
+        endDate: selectedEndDate,
+        isRecurring: selectedRecurring,
+        recurrences: newRecurrences,
+      );
+
+      // Reload the updated habit to pass to callback
+      final updatedHabit = await loadHabit(habit.gId);
+      await onUpdated(updatedHabit);
+    } catch (e) {
+      debugPrint('Failed to update habit: $e');
+      if (context.mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Failed to update habit')));
+      }
+    }
+  }
+
+  titleController.dispose();
+  descController.dispose();
   dateController.dispose();
   endDateController.dispose();
 }
