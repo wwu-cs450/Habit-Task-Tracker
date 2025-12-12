@@ -555,15 +555,47 @@ class _MyHomePageState extends State<MyHomePage> {
                                         IconButton(
                                           icon: const Icon(Icons.edit),
                                           tooltip: 'Edit',
-                                          onPressed: () {
-                                            ScaffoldMessenger.of(
+                                          onPressed: () async {
+                                            final habit = _habits[index];
+                                            await showEditHabitDialog(
                                               context,
-                                            ).showSnackBar(
-                                              SnackBar(
-                                                content: Text(
-                                                  'Edit ${_habits[index].name}',
-                                                ),
-                                              ),
+                                              habit,
+                                              (updatedHabit) async {
+                                                if (!mounted) return;
+                                                // Reload habits from database to get updated data
+                                                final result =
+                                                    await loadHabitsFromDb();
+                                                final List<Habit> habits =
+                                                    (result['habits']
+                                                            as List<dynamic>)
+                                                        .cast<Habit>();
+                                                final Set<String> completed =
+                                                    (result['completedIds']
+                                                            as Set<dynamic>)
+                                                        .cast<String>();
+
+                                                setState(() {
+                                                  _habits = habits;
+                                                  _allHabits = List<Habit>.from(
+                                                    habits,
+                                                  );
+                                                  _completedToday.clear();
+                                                  _completedToday.addAll(
+                                                    completed,
+                                                  );
+                                                  _allCompletedToday
+                                                    ..clear()
+                                                    ..addAll(completed);
+                                                  _expanded.clear();
+                                                  for (var _ in _habits) {
+                                                    _expanded.add(false);
+                                                  }
+                                                });
+                                                _updateProgressBar(
+                                                  _habits.length,
+                                                  _completedToday.length,
+                                                );
+                                              },
                                             );
                                           },
                                         ),
