@@ -10,6 +10,7 @@ import 'search.dart';
 import 'calendar.dart';
 import 'timer.dart';
 import 'uuid.dart';
+import 'backend.dart';
 
 // I got help from GitHub CoPilot with this code. I also got some ideas from
 // this youtube video: https://www.youtube.com/watch?v=K4P5DZ9TRns
@@ -24,23 +25,11 @@ Future<void> main() async {
 }
 
 // Class to provide styling and information for the entire app
-class MyApp extends StatelessWidget {
+class MyApp extends StatefulWidget {
   const MyApp({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Habit Task Tracker',
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color.fromARGB(255, 0, 0, 0),
-        ),
-        textTheme: GoogleFonts.merriweatherTextTheme(),
-        useMaterial3: true,
-      ),
-      home: const MyHomePage(title: 'Habits'),
-    );
-  }
+  State<MyApp> createState() => _MyAppState();
 
   static void onNotificationPressed(NotificationResponse response) {
     // final String? payload = response.payload;
@@ -49,11 +38,90 @@ class MyApp extends StatelessWidget {
   }
 }
 
+class _MyAppState extends State<MyApp> {
+  ThemeMode _themeMode = ThemeMode.light;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadThemePreference();
+  }
+
+  Future<void> _loadThemePreference() async {
+    try {
+      final themeData = await loadData('settings', 'theme');
+      if (themeData != null && themeData is Map) {
+        final isDark = themeData['isDark'] as bool? ?? false;
+        if (mounted) {
+          setState(() {
+            _themeMode = isDark ? ThemeMode.dark : ThemeMode.light;
+          });
+        }
+      }
+    } catch (e) {
+      debugPrint('Error loading theme preference: $e');
+    }
+  }
+
+  void toggleTheme(bool isDark) {
+    setState(() {
+      _themeMode = isDark ? ThemeMode.dark : ThemeMode.light;
+    });
+    _saveThemePreference(isDark);
+  }
+
+  Future<void> _saveThemePreference(bool isDark) async {
+    try {
+      await saveData('settings', 'theme', {'isDark': isDark});
+    } catch (e) {
+      debugPrint('Error saving theme preference: $e');
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'Habit Task Tracker',
+      theme: ThemeData(
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: const Color.fromARGB(255, 0, 0, 0),
+          brightness: Brightness.light,
+        ),
+        textTheme: GoogleFonts.merriweatherTextTheme(),
+        useMaterial3: true,
+      ),
+      darkTheme: ThemeData(
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: const Color.fromARGB(255, 255, 255, 255),
+          brightness: Brightness.dark,
+        ),
+        textTheme: GoogleFonts.merriweatherTextTheme(
+          ThemeData.dark().textTheme,
+        ),
+        useMaterial3: true,
+      ),
+      themeMode: _themeMode,
+      home: MyHomePage(
+        title: 'Habits',
+        onThemeToggle: toggleTheme,
+        isDarkMode: _themeMode == ThemeMode.dark,
+      ),
+    );
+  }
+}
+
 // Class to hold title and state for the home page
 class MyHomePage extends StatefulWidget {
-  const MyHomePage({super.key, required this.title});
+  const MyHomePage({
+    super.key,
+    required this.title,
+    required this.onThemeToggle,
+    required this.isDarkMode,
+  });
 
   final String title;
+  final Function(bool) onThemeToggle;
+  final bool isDarkMode;
 
   @override
   State<MyHomePage> createState() => _MyHomePageState();
@@ -252,7 +320,6 @@ class _MyHomePageState extends State<MyHomePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       key: _scaffoldKey,
-      backgroundColor: Colors.white,
       // Top App Bar (Header)
       appBar: AppBar(
         // Hamburger menu button to open navigation menu
@@ -260,7 +327,7 @@ class _MyHomePageState extends State<MyHomePage> {
           icon: const Icon(Icons.menu),
           onPressed: () => _scaffoldKey.currentState?.openDrawer(),
         ),
-        backgroundColor: const Color.fromARGB(255, 221, 146, 181),
+        backgroundColor: const Color.fromARGB(255, 180, 100, 150),
         title: Text(widget.title),
       ),
 
@@ -268,59 +335,76 @@ class _MyHomePageState extends State<MyHomePage> {
       drawer: Drawer(
         width: MediaQuery.of(context).size.width * 0.6,
         child: SafeArea(
-          child: ListView(
-            padding: EdgeInsets.zero,
+          child: Column(
             children: [
-              // Header with close button
-              Container(
-                height: 56,
-                padding: const EdgeInsets.all(8.0),
-                decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.primary,
-                ),
-                // Close button in the header
-                child: Align(
-                  alignment: Alignment.topRight,
-                  child: IconButton(
-                    icon: const Icon(Icons.close, color: Colors.white),
-                    onPressed: () {
-                      Navigator.pop(context);
-                    },
-                  ),
-                ),
-              ),
-              // Navigate to Habit Page
-              ListTile(
-                leading: const Icon(Icons.check_circle),
-                title: const Text('Habits'),
-                onTap: () {
-                  Navigator.pop(context);
-                },
-              ),
-
-              ListTile(
-                leading: const Icon(Icons.timer),
-                title: const Text('Timer'),
-                onTap: () {
-                  Navigator.pop(context);
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (_) => const TimerPage()),
-                  );
-                },
-              ),
-              // Navigate to Calendar Page
-              ListTile(
-                leading: const Icon(Icons.calendar_today),
-                title: const Text('Calendar'),
-                onTap: () {
-                  Navigator.pop(context);
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => CalendarPage(habits: _habits),
+              Expanded(
+                child: ListView(
+                  padding: EdgeInsets.zero,
+                  children: [
+                    // Header with close button
+                    Container(
+                      height: 56,
+                      padding: const EdgeInsets.all(8.0),
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).colorScheme.primary,
+                      ),
+                      // Close button in the header
+                      child: Align(
+                        alignment: Alignment.topRight,
+                        child: IconButton(
+                          icon: const Icon(Icons.close, color: Colors.white),
+                          onPressed: () {
+                            Navigator.pop(context);
+                          },
+                        ),
+                      ),
                     ),
-                  );
+                    // Navigate to Habit Page
+                    ListTile(
+                      leading: const Icon(Icons.check_circle),
+                      title: const Text('Habits'),
+                      onTap: () {
+                        Navigator.pop(context);
+                      },
+                    ),
+
+                    ListTile(
+                      leading: const Icon(Icons.timer),
+                      title: const Text('Timer'),
+                      onTap: () {
+                        Navigator.pop(context);
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (_) => const TimerPage()),
+                        );
+                      },
+                    ),
+                    // Navigate to Calendar Page
+                    ListTile(
+                      leading: const Icon(Icons.calendar_today),
+                      title: const Text('Calendar'),
+                      onTap: () {
+                        Navigator.pop(context);
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => CalendarPage(habits: _habits),
+                          ),
+                        );
+                      },
+                    ),
+                  ],
+                ),
+              ),
+              // Theme Toggle at the bottom
+              ListTile(
+                leading: Icon(
+                  widget.isDarkMode ? Icons.wb_sunny : Icons.nightlight_round,
+                ),
+                title: Text(widget.isDarkMode ? 'Light Mode' : 'Dark Mode'),
+                onTap: () {
+                  widget.onThemeToggle(!widget.isDarkMode);
+                  Navigator.pop(context);
                 },
               ),
             ],
@@ -346,25 +430,25 @@ class _MyHomePageState extends State<MyHomePage> {
                     horizontal: 12,
                   ),
                   filled: true,
-                  fillColor: Colors.grey.shade100,
+                  fillColor: Colors.grey.shade300,
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
                     borderSide: BorderSide(
-                      color: Colors.grey.shade400,
+                      color: Colors.grey.shade600,
                       width: 1.5,
                     ),
                   ),
                   enabledBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
                     borderSide: BorderSide(
-                      color: Colors.grey.shade400,
+                      color: Colors.grey.shade600,
                       width: 1.5,
                     ),
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
                     borderSide: BorderSide(
-                      color: Colors.grey.shade600,
+                      color: Colors.grey.shade800,
                       width: 2.0,
                     ),
                   ),
@@ -385,8 +469,8 @@ class _MyHomePageState extends State<MyHomePage> {
                     child: LinearProgressIndicator(
                       value: progress,
                       minHeight: 10,
-                      backgroundColor: Colors.grey.shade300,
-                      color: const Color.fromARGB(255, 28, 164, 255),
+                      backgroundColor: Colors.grey.shade500,
+                      color: const Color.fromARGB(255, 20, 120, 200),
                     ),
                   ),
                   const SizedBox(width: 12),
