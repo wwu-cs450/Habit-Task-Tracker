@@ -3,12 +3,12 @@ import 'package:flutter/material.dart';
 import 'package:habit_task_tracker/notifier.dart' as notifier;
 import 'package:habit_task_tracker/recurrence.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:habit_task_tracker/timer.dart';
 import 'habit.dart';
 import 'main_helpers.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'search.dart';
 import 'calendar.dart';
-import 'timer.dart';
 import 'uuid.dart';
 
 // I got help from GitHub CoPilot with this code. I also got some ideas from
@@ -305,7 +305,9 @@ class _MyHomePageState extends State<MyHomePage> {
                   Navigator.pop(context);
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (_) => const TimerPage()),
+                    MaterialPageRoute(
+                      builder: (_) => TimerPage(habits: _habits),
+                    ),
                   );
                 },
               ),
