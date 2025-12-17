@@ -37,7 +37,7 @@ class MyApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(
           seedColor: const Color.fromARGB(255, 0, 0, 0),
         ),
-        textTheme: GoogleFonts.merriweatherTextTheme(),
+        textTheme: GoogleFonts.interTextTheme(),
         useMaterial3: true,
       ),
       home: const MyHomePage(title: 'Habits'),
@@ -346,7 +346,7 @@ class _MyHomePageState extends State<MyHomePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       key: _scaffoldKey,
-      backgroundColor: Colors.white,
+      backgroundColor: Color(0xff060606),
       // Top App Bar (Header)
       appBar: AppBar(
         // Hamburger menu button to open navigation menu
@@ -354,9 +354,9 @@ class _MyHomePageState extends State<MyHomePage> {
           icon: const Icon(Icons.menu),
           onPressed: () => _scaffoldKey.currentState?.openDrawer(),
         ),
-        backgroundColor: const Color.fromARGB(255, 221, 146, 181),
+        backgroundColor: const Color(0xffd9d9d9),
+        elevation: 0,
         // backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        title: Text(widget.title),
       ),
 
       // Navigation Menu
@@ -428,6 +428,16 @@ class _MyHomePageState extends State<MyHomePage> {
         padding: const EdgeInsets.all(16.0),
         child: Column(
           children: [
+            //Habits Header
+            Text(
+              "Habits",
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.w400,
+                color: Color(0xffd9d9d9),
+              ),
+            ),
+            SizedBox(height: 16),
             // Search Bar
             SizedBox(
               height: 44,
@@ -471,22 +481,43 @@ class _MyHomePageState extends State<MyHomePage> {
                 style: const TextStyle(fontSize: 14),
               ),
             ),
+
             // Progress Bar
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 8.0),
               child: Row(
                 children: [
                   Expanded(
-                    child: LinearProgressIndicator(
-                      value: progress,
-                      minHeight: 10,
-                      // NEED TO DECIDE WHAT COLORS TO USE HERE
-                      backgroundColor: Colors.grey.shade300,
-                      color: const Color.fromARGB(255, 28, 164, 255),
+                    child: Container(
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(color: Colors.white, width: 1),
+                      ),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(20),
+                        child: TweenAnimationBuilder<double>(
+                          tween: Tween<double>(begin: 0, end: progress),
+                          duration: const Duration(milliseconds: 400),
+                          curve: Curves.easeOutCubic,
+                          builder: (context, value, _) {
+                            return LinearProgressIndicator(
+                              value: value,
+                              minHeight: 10,
+                              backgroundColor: Colors.transparent,
+                              valueColor: const AlwaysStoppedAnimation(
+                                Color(0xff71c591),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
                     ),
                   ),
-                  const SizedBox(width: 12),
-                  Text('${(progress * 100).round()}%'),
+                  const SizedBox(width: 10),
+                  Text(
+                    '${(progress * 100).round()}%',
+                    style: TextStyle(color: Colors.white),
+                  ),
                 ],
               ),
             ),
@@ -505,76 +536,96 @@ class _MyHomePageState extends State<MyHomePage> {
                       duration: const Duration(milliseconds: 250),
                       curve: Curves.easeInOut,
                       child: Card(
-                        elevation: 2,
+                        color: Colors.transparent,
+                        elevation: 0,
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10),
+                          borderRadius: BorderRadius.circular(5),
+                          side: const BorderSide(color: Color(0xffd9d9d9)),
                         ),
                         child: Column(
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             ListTile(
                               // Checkbox to mark habit as done/not done
-                              leading: Checkbox(
-                                value: _completedToday.contains(
-                                  _habits[index].gId,
-                                ),
-                                // Change habit completion status
-                                onChanged: (bool? value) async {
-                                  final newVal = value ?? false;
-                                  final habit = _habits[index];
+                              trailing: Transform.scale(
+                                scale: 1.8,
+                                child: Checkbox(
+                                  value: _completedToday.contains(
+                                    _habits[index].gId,
+                                  ),
+                                  shape: const CircleBorder(),
+                                  side: const BorderSide(
+                                    color: Color(0xffd9d9d9),
+                                    width: 1,
+                                  ),
+                                  activeColor: const Color(0xff71c591),
+                                  checkColor: Colors.black,
+                                  onChanged: (bool? value) async {
+                                    final newVal = value ?? false;
+                                    final habit = _habits[index];
 
-                                  // Update UI state
-                                  setState(() {
-                                    if (newVal) {
-                                      _completedToday.add(habit.gId);
-                                      _allCompletedToday.add(habit.gId);
-                                    } else {
-                                      _completedToday.remove(habit.gId);
-                                      _allCompletedToday.remove(habit.gId);
-                                    }
-                                  });
-                                  _updateProgressBar(
-                                    _habits.length,
-                                    _completedToday.length,
-                                  );
-
-                                  // Save the Change to the Database
-                                  final messenger = ScaffoldMessenger.of(
-                                    context,
-                                  );
-                                  final ok = await setCompletion(
-                                    Uuid.fromString(habit.gId),
-                                    newVal,
-                                    habit.description,
-                                  );
-
-                                  if (!ok) {
-                                    // rollback UI on failure
-                                    if (!mounted) return;
                                     setState(() {
                                       if (newVal) {
-                                        _completedToday.remove(habit.gId);
-                                        _allCompletedToday.remove(habit.gId);
-                                      } else {
                                         _completedToday.add(habit.gId);
                                         _allCompletedToday.add(habit.gId);
+                                      } else {
+                                        _completedToday.remove(habit.gId);
+                                        _allCompletedToday.remove(habit.gId);
                                       }
                                     });
+
                                     _updateProgressBar(
                                       _habits.length,
                                       _completedToday.length,
                                     );
-                                    messenger.showSnackBar(
-                                      const SnackBar(
-                                        content: Text('Failed to save state'),
-                                      ),
+
+                                    final ok = await setCompletion(
+                                      Uuid.fromString(habit.gId),
+                                      newVal,
+                                      habit.description,
                                     );
-                                  }
-                                },
+
+                                    if (!ok && mounted) {
+                                      setState(() {
+                                        if (newVal) {
+                                          _completedToday.remove(habit.gId);
+                                          _allCompletedToday.remove(habit.gId);
+                                        } else {
+                                          _completedToday.add(habit.gId);
+                                          _allCompletedToday.add(habit.gId);
+                                        }
+                                      });
+
+                                      _updateProgressBar(
+                                        _habits.length,
+                                        _completedToday.length,
+                                      );
+
+                                      ScaffoldMessenger.of(
+                                        context,
+                                      ).showSnackBar(
+                                        const SnackBar(
+                                          content: Text('Failed to save state'),
+                                        ),
+                                      );
+                                    }
+                                  },
+                                ),
                               ),
+
                               // Set the title and subtitle (description) of the habit
-                              title: Text(_habits[index].name),
+                              title: Text(
+                                _habits[index].name,
+                                style: const TextStyle(
+                                  color: Color(0xffd9d9d9),
+                                  fontSize: 17,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
                               subtitle: Text(
+                                style: const TextStyle(
+                                  color: Color(0xffd9d9d9),
+                                ),
                                 _habits[index].description ?? '',
                                 maxLines: _expanded[index] ? null : 1,
                                 overflow: _expanded[index]
