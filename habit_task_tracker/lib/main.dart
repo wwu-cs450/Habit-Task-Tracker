@@ -362,63 +362,77 @@ class _MyHomePageState extends State<MyHomePage> {
       // Navigation Menu
       drawer: Drawer(
         width: MediaQuery.of(context).size.width * 0.6,
-        child: SafeArea(
-          child: ListView(
-            padding: EdgeInsets.zero,
-            children: [
-              // Header with close button
-              Container(
-                height: 56,
-                padding: const EdgeInsets.all(8.0),
-                decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.primary,
-                ),
-                // Close button in the header
-                child: Align(
-                  alignment: Alignment.topRight,
-                  child: IconButton(
-                    icon: const Icon(Icons.close, color: Colors.white),
-                    onPressed: () {
-                      Navigator.pop(context);
-                    },
+        child: Container(
+          color: const Color(0xffd9d9d9),
+          child: SafeArea(
+            child: ListView(
+              padding: EdgeInsets.zero,
+              children: [
+                // Header with close button
+                Container(
+                  height: 56,
+                  padding: const EdgeInsets.all(8.0),
+                  decoration: BoxDecoration(color: Color(0xffd9d9d9)),
+                  // Close button in the header
+                  child: Align(
+                    alignment: Alignment.topRight,
+                    child: IconButton(
+                      icon: const Icon(Icons.close, color: Color(0xFF9D9B9A)),
+                      onPressed: () {
+                        Navigator.pop(context);
+                      },
+                    ),
                   ),
                 ),
-              ),
-              // Navigate to Habit Page
-              ListTile(
-                leading: const Icon(Icons.check_circle),
-                title: const Text('Habits'),
-                onTap: () {
-                  Navigator.pop(context);
-                },
-              ),
-
-              ListTile(
-                leading: const Icon(Icons.timer),
-                title: const Text('Timer'),
-                onTap: () {
-                  Navigator.pop(context);
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (_) => const TimerPage()),
-                  );
-                },
-              ),
-              // Navigate to Calendar Page
-              ListTile(
-                leading: const Icon(Icons.calendar_today),
-                title: const Text('Calendar'),
-                onTap: () {
-                  Navigator.pop(context);
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => CalendarPage(habits: _habits),
+                // Divider line
+                Container(
+                  width: 203,
+                  decoration: ShapeDecoration(
+                    shape: RoundedRectangleBorder(
+                      side: BorderSide(
+                        width: 1,
+                        strokeAlign: BorderSide.strokeAlignCenter,
+                        color: const Color(0xFF9D9B9A),
+                      ),
                     ),
-                  );
-                },
-              ),
-            ],
+                  ),
+                ),
+                // Navigate to Habit Page
+                ListTile(
+                  leading: const Icon(Icons.check_circle),
+                  title: const Text('Habits'),
+                  onTap: () {
+                    Navigator.pop(context);
+                  },
+                ),
+
+                ListTile(
+                  leading: const Icon(Icons.timer),
+                  title: const Text('Timer'),
+                  onTap: () {
+                    Navigator.pop(context);
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const TimerPage()),
+                    );
+                  },
+                ),
+                // Navigate to Calendar Page
+                ListTile(
+                  leading: const Icon(Icons.calendar_today),
+                  title: const Text('Calendar'),
+                  onTap: () {
+                    Navigator.pop(context);
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => CalendarPage(habits: _habits),
+                      ),
+                    );
+                  },
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -657,11 +671,15 @@ class _MyHomePageState extends State<MyHomePage> {
                                         const Icon(
                                           Icons.calendar_today,
                                           size: 14,
+                                          color: Colors.white,
                                         ),
                                         const SizedBox(width: 6),
                                         Flexible(
                                           child: Text(
                                             'Start: ${_format(_habits[index].startDate)}',
+                                            style: const TextStyle(
+                                              color: Colors.white,
+                                            ),
                                           ),
                                         ),
                                       ],
@@ -673,11 +691,15 @@ class _MyHomePageState extends State<MyHomePage> {
                                         const Icon(
                                           Icons.calendar_today,
                                           size: 14,
+                                          color: Colors.white,
                                         ),
                                         const SizedBox(width: 6),
                                         Flexible(
                                           child: Text(
                                             'End: ${_format(_habits[index].endDate)}',
+                                            style: const TextStyle(
+                                              color: Colors.white,
+                                            ),
                                           ),
                                         ),
                                       ],
@@ -686,11 +708,18 @@ class _MyHomePageState extends State<MyHomePage> {
                                     // Recurring Status
                                     Row(
                                       children: [
-                                        const Icon(Icons.repeat, size: 14),
+                                        const Icon(
+                                          Icons.repeat,
+                                          size: 14,
+                                          color: Colors.white,
+                                        ),
                                         const SizedBox(width: 6),
                                         Flexible(
                                           child: Text(
                                             'Recurring: ${_habits[index].gIsRecurring ? _recurrenceText(_habits[index].gRecurrences) : "No"}',
+                                            style: const TextStyle(
+                                              color: Colors.white,
+                                            ),
                                           ),
                                         ),
                                       ],
@@ -700,7 +729,10 @@ class _MyHomePageState extends State<MyHomePage> {
                                       children: [
                                         // Habit Edit Button
                                         IconButton(
-                                          icon: const Icon(Icons.edit),
+                                          icon: const Icon(
+                                            Icons.edit,
+                                            color: Colors.white,
+                                          ),
                                           tooltip: 'Edit',
                                           onPressed: () {
                                             ScaffoldMessenger.of(
@@ -716,7 +748,10 @@ class _MyHomePageState extends State<MyHomePage> {
                                         ),
                                         // Habit Delete Button
                                         IconButton(
-                                          icon: const Icon(Icons.delete),
+                                          icon: const Icon(
+                                            Icons.delete,
+                                            color: Colors.white,
+                                          ),
                                           tooltip: 'Delete',
                                           onPressed: () async {
                                             final habit = _habits[index];
@@ -764,23 +799,36 @@ class _MyHomePageState extends State<MyHomePage> {
         ),
       ),
       // Plus button to add a new habit
-      floatingActionButton: SizedBox(
-        width: 80,
-        height: 80,
-        child: FloatingActionButton(
-          onPressed: () async {
-            await showCreateHabitDialog(context, (habit) async {
-              if (!mounted) return;
-              setState(() {
-                _habits.insert(0, habit);
-                _expanded.insert(0, false);
-                _allHabits.insert(0, habit);
-              });
-              _updateProgressBar(_habits.length, _completedToday.length);
-            });
-          },
-          shape: const CircleBorder(),
-          child: const Icon(Icons.add, size: 45),
+      floatingActionButton: Align(
+        alignment: Alignment.bottomCenter,
+        child: Padding(
+          padding: const EdgeInsets.only(bottom: 16.0),
+          child: SizedBox(
+            width: 70,
+            height: 70,
+            child: FloatingActionButton(
+              onPressed: () async {
+                await showCreateHabitDialog(context, (habit) async {
+                  if (!mounted) return;
+                  setState(() {
+                    _habits.insert(0, habit);
+                    _expanded.insert(0, false);
+                    _allHabits.insert(0, habit);
+                  });
+                  _updateProgressBar(_habits.length, _completedToday.length);
+                });
+              },
+              //white border
+              backgroundColor: Color(0xff060606),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(35),
+                side: const BorderSide(color: Colors.white, width: 1),
+              ),
+              elevation: 0,
+              //plus symbol
+              child: const Icon(Icons.add, color: Colors.white, size: 50),
+            ),
+          ),
         ),
       ),
     );
